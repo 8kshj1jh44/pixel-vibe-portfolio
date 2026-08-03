@@ -1,24 +1,34 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { GameStage } from "@/components/game/GameStage";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+const title = "Franz Lyster Tagalogon — Pixel Arcade Portfolio";
+const description =
+  "Play through the retro pixel portfolio of Franz Lyster L. Tagalogon: IT support technician, embedded systems programmer and freelance website developer.";
+
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="min-h-screen bg-background px-3 py-6 sm:px-6 sm:py-10">
+      <GameStage />
+      <div className="mx-auto mt-6 flex max-w-5xl flex-wrap items-center justify-between gap-3">
+        <p className="text-lg text-muted-foreground">
+          Arrows / A-D to move · Space to jump · E to interact
+        </p>
+        <Link to="/resume" className="pixel-btn bg-secondary text-foreground">
+          VIEW RESUME
+        </Link>
+      </div>
+    </main>
   );
 }
