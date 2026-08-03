@@ -29,8 +29,10 @@ Pixel-art aesthetic matching your reference: purple/magenta dusk skies, layered 
    - About: name, title, contact line, the professional summary
    - Skills: the 8 skills as collectible power-up items with pixel icons
    - Work history: 4 job stations (Freelance Web Dev, JMC Power Depot / Haitek, Embedded Systems, Photographer), each with dates + bullets
-5. **Contact / final boss room** — a working contact form styled as a retro terminal (name, email, message), plus your phone and email displayed as static info.
-6. **Game over / Thank you** — end-of-level celebration screen with "THANK YOU" arcade type and a replay button.
+5. **Delivered websites zone (arcade cabinet row)** — a zone of pixel arcade cabinets, one per delivered site. Walking up and pressing E opens a "sneak peek" dialog: screenshot thumbnail inside a pixel monitor frame, project name, short blurb, tech tags, and a VISIT SITE button. Seeded with 3-4 clearly-marked placeholder entries (placeholder pixel screenshots + "COMING SOON" text) that you can swap for real projects later by editing one content file.
+6. **Contact / final boss room** — a working contact form styled as a retro terminal (name, email, message), plus your phone and email displayed as static info.
+7. **Game over / Thank you** — end-of-level celebration screen with "THANK YOU" arcade type and a replay button.
+
 
 ## Non-game access
 
