@@ -29,8 +29,10 @@ Pixel-art aesthetic matching your reference: purple/magenta dusk skies, layered 
    - About: name, title, contact line, the professional summary
    - Skills: the 8 skills as collectible power-up items with pixel icons
    - Work history: 4 job stations (Freelance Web Dev, JMC Power Depot / Haitek, Embedded Systems, Photographer), each with dates + bullets
-5. **Contact / final boss room** — a working contact form styled as a retro terminal (name, email, message), plus your phone and email displayed as static info.
-6. **Game over / Thank you** — end-of-level celebration screen with "THANK YOU" arcade type and a replay button.
+5. **Delivered websites zone (arcade cabinet row)** — a zone of pixel arcade cabinets, one per delivered site. Walking up and pressing E opens a "sneak peek" dialog: screenshot thumbnail inside a pixel monitor frame, project name, short blurb, tech tags, and a VISIT SITE button. Seeded with 3-4 clearly-marked placeholder entries (placeholder pixel screenshots + "COMING SOON" text) that you can swap for real projects later by editing one content file.
+6. **Contact / final boss room** — a working contact form styled as a retro terminal (name, email, message), plus your phone and email displayed as static info.
+7. **Game over / Thank you** — end-of-level celebration screen with "THANK YOU" arcade type and a replay button.
+
 
 ## Non-game access
 
@@ -46,7 +48,9 @@ A pause menu (ESC) and a "SKIP GAME — VIEW RESUME" link open a scrollable pixe
 ## Technical notes
 
 - Route `/` = the game (title → level → contact → thank you), all states in one page with a game state machine
-- Route `/resume` = the plain readable version, same content source (single content file so nothing gets out of sync)
+- Route `/resume` = the plain readable version, same content source (single content file so nothing gets out of sync); includes a Projects grid mirroring the arcade cabinets
+- All portfolio content, including the delivered-websites list (title, blurb, tags, image, URL), lives in one editable `src/content/portfolio.ts` file so adding a real project is a few lines
+
 - Game loop: HTML canvas + requestAnimationFrame, sprite-less pixel rendering (drawn rects/patterns) so no external art assets are required; generated pixel background art for parallax layers
 - Keyboard + touch input, pause on tab blur, respects prefers-reduced-motion by offering the resume view
 - SEO: per-route titles, meta descriptions, og tags; semantic content on `/resume` for crawlers
