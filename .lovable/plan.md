@@ -48,7 +48,9 @@ A pause menu (ESC) and a "SKIP GAME — VIEW RESUME" link open a scrollable pixe
 ## Technical notes
 
 - Route `/` = the game (title → level → contact → thank you), all states in one page with a game state machine
-- Route `/resume` = the plain readable version, same content source (single content file so nothing gets out of sync)
+- Route `/resume` = the plain readable version, same content source (single content file so nothing gets out of sync); includes a Projects grid mirroring the arcade cabinets
+- All portfolio content, including the delivered-websites list (title, blurb, tags, image, URL), lives in one editable `src/content/portfolio.ts` file so adding a real project is a few lines
+
 - Game loop: HTML canvas + requestAnimationFrame, sprite-less pixel rendering (drawn rects/patterns) so no external art assets are required; generated pixel background art for parallax layers
 - Keyboard + touch input, pause on tab blur, respects prefers-reduced-motion by offering the resume view
 - SEO: per-route titles, meta descriptions, og tags; semantic content on `/resume` for crawlers
