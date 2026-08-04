@@ -3,9 +3,19 @@
 export const VIEW_W = 480;
 export const VIEW_H = 270;
 export const GROUND_Y = 214;
-export const WORLD_W = 5400;
+export const WORLD_W = 7900;
 
-export type StationKind = "sign" | "cabinet" | "terminal" | "flag";
+export type StationKind = "sign" | "cabinet" | "terminal" | "flag" | "portal" | "boss";
+
+export type CharacterPalette = "coral" | "aqua" | "lime";
+export type CharacterAccessory = "mask" | "cap" | "headset";
+export type PetSpecies = "fish" | "turtle" | "octopus";
+export type Appearance = {
+  palette: CharacterPalette;
+  accessory: CharacterAccessory;
+  pet: PetSpecies;
+  petColor: CharacterPalette;
+};
 
 export type Station = {
   id: string;
@@ -29,7 +39,12 @@ export const ZONES: Zone[] = [
   { name: "SKILLS ZONE", from: 900, to: 2300 },
   { name: "WORK HISTORY ZONE", from: 2300, to: 3700 },
   { name: "DELIVERED SITES", from: 3700, to: 4800 },
-  { name: "CONTACT ZONE", from: 4800, to: WORLD_W },
+  { name: "DIVE GATE", from: 4800, to: 5400 },
+  { name: "DEEP ARCHIVE", from: 5400, to: 6200 },
+  { name: "CURRENT RUN", from: 6200, to: 6750 },
+  { name: "TOOL REEF", from: 6750, to: 7100 },
+  { name: "KRAKEN TRENCH", from: 7100, to: 7500 },
+  { name: "CONTACT CHAMBER", from: 7500, to: WORLD_W },
 ];
 
 export function zoneAt(x: number): string {
@@ -178,6 +193,10 @@ function drawGround(ctx: CanvasRenderingContext2D, camX: number) {
 }
 
 export function drawBackground(ctx: CanvasRenderingContext2D, camX: number) {
+  if (camX >= 5200) {
+    drawUnderwater(ctx, camX);
+    return;
+  }
   drawSky(ctx);
   drawSun(ctx, camX);
   drawClouds(ctx, camX);
@@ -191,7 +210,45 @@ export function drawBackground(ctx: CanvasRenderingContext2D, camX: number) {
   }
 }
 
-export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: number) {
+function drawUnderwater(ctx: CanvasRenderingContext2D, camX: number) {
+  px(ctx, 0, 0, VIEW_W, VIEW_H, "#087b9a");
+  for (let i = 0; i < 8; i++) {
+    px(ctx, 0, i * 28, VIEW_W, 29, i % 2 === 0 ? "#087b9a" : "#076f8a");
+  }
+  const rayOffset = Math.floor(camX * 0.08) % 120;
+  for (let x = -rayOffset; x < VIEW_W + 80; x += 120) {
+    for (let y = 0; y < 150; y += 8) px(ctx, x + y * 0.18, y, 18, 4, "rgba(105,232,221,0.12)");
+  }
+  hills(ctx, camX, 0.12, 190, 74, 6, "#07566f", 2.1);
+  hills(ctx, camX, 0.3, 212, 42, 5, "#06465e", 5.2);
+  px(ctx, 0, GROUND_Y, VIEW_W, VIEW_H - GROUND_Y, "#053d52");
+  const ruins = Math.floor(camX / 180) * 180;
+  for (let wx = ruins - 180; wx < camX + VIEW_W + 180; wx += 180) {
+    const x = wx - camX;
+    px(ctx, x, 166, 72, 48, "#07506a");
+    for (let w = 0; w < 3; w++) px(ctx, x + 9 + w * 21, 178, 10, 18, "#04364c");
+  }
+  for (let i = 0; i < 22; i++) {
+    const wx = i * 360 + 5480;
+    const x = wx - camX;
+    if (x > -20 && x < VIEW_W + 20) {
+      px(ctx, x, 192, 4, 22, "#10a889");
+      px(ctx, x + 5, 200, 3, 14, "#42d3a8");
+    }
+  }
+  for (let i = 0; i < 18; i++) {
+    const x = ((i * 137 - camX * 0.2) % (VIEW_W + 40)) - 20;
+    const y = 22 + ((i * 47 + camX * 0.03) % 175);
+    px(ctx, x, y, 2 + (i % 2), 2 + (i % 2), "#84f0df");
+  }
+}
+
+export function drawPlayer(
+  ctx: CanvasRenderingContext2D,
+  p: Player,
+  camX: number,
+  appearance?: Appearance,
+) {
   const x = p.x - camX;
   const y = p.y;
   const walking = Math.abs(p.vx) > 1 && p.onGround;
@@ -202,7 +259,8 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: numbe
   px(ctx, x + 2, y + 16, 4, 6, swing > 0 ? "#243a8f" : "#1b2c73");
   px(ctx, x + 8, y + 16, 4, 6, swing > 0 ? "#1b2c73" : "#243a8f");
   // body
-  px(ctx, x + 1, y + 8, PW - 2, 9, "#25c2e0");
+  const suit = appearance?.palette === "coral" ? "#ff5f88" : appearance?.palette === "lime" ? "#66dc72" : "#25c2e0";
+  px(ctx, x + 1, y + 8, PW - 2, 9, suit);
   px(ctx, x + 1, y + 12, PW - 2, 2, "#1a95ad");
   // arms
   px(ctx, p.facing > 0 ? x + PW - 2 : x, y + 9, 2, 6, "#f2c9a0");
@@ -212,6 +270,38 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, p: Player, camX: numbe
   px(ctx, p.facing > 0 ? x + 10 : x + 1, y - 2, 4, 2, "#b81c92");
   // eye
   px(ctx, p.facing > 0 ? x + 8 : x + 3, y + 3, 2, 2, "#20102a");
+  if (appearance?.accessory === "mask") {
+    px(ctx, x + 2, y + 1, 10, 5, "#65efff");
+    px(ctx, x + 4, y + 3, 6, 2, "#12354a");
+  } else if (appearance?.accessory === "headset") {
+    px(ctx, x, y + 1, 2, 7, "#ffe14d");
+    px(ctx, x + 12, y + 1, 2, 7, "#ffe14d");
+  }
+}
+
+export function drawPet(
+  ctx: CanvasRenderingContext2D,
+  p: Player,
+  camX: number,
+  t: number,
+  appearance: Appearance,
+) {
+  const x = p.x - camX - p.facing * 20;
+  const y = p.y + 8 + Math.sin(t * 4) * 4;
+  const color = appearance.petColor === "coral" ? "#ff7198" : appearance.petColor === "lime" ? "#7bea83" : "#5ee6ed";
+  if (appearance.pet === "fish") {
+    px(ctx, x, y, 10, 6, color);
+    px(ctx, x - 4, y - 2, 4, 10, color);
+  } else if (appearance.pet === "turtle") {
+    px(ctx, x, y, 11, 7, color);
+    px(ctx, x + 10, y + 2, 3, 3, "#baf3a4");
+    px(ctx, x - 2, y - 2, 3, 3, "#baf3a4");
+  } else {
+    px(ctx, x, y, 9, 7, color);
+    px(ctx, x, y + 7, 2, 5, color);
+    px(ctx, x + 4, y + 7, 2, 5, color);
+    px(ctx, x + 8, y + 7, 2, 5, color);
+  }
 }
 
 export function drawCoin(ctx: CanvasRenderingContext2D, c: Coin, camX: number, t: number) {
@@ -285,6 +375,22 @@ export function drawStation(
   if (s.kind === "cabinet") drawCabinet(ctx, x, s.label, t);
   if (s.kind === "terminal") drawTerminal(ctx, x, t);
   if (s.kind === "flag") drawFlag(ctx, x, t);
+  if (s.kind === "portal") {
+    px(ctx, x, GROUND_Y - 50, 38, 50, "#074e72");
+    px(ctx, x + 5, GROUND_Y - 45, 28, 40, "#59e4e8");
+    px(ctx, x + 10, GROUND_Y - 38, 18, 30, "#087b9a");
+  }
+  if (s.kind === "boss") {
+    const coral = s.id.includes("kraken") ? "#d83c88" : "#33d4cc";
+    px(ctx, x, GROUND_Y - 44, 54, 44, coral);
+    px(ctx, x + 10, GROUND_Y - 34, 5, 5, "#ffe14d");
+    px(ctx, x + 34, GROUND_Y - 34, 5, 5, "#ffe14d");
+    if (s.id.includes("kraken")) {
+      for (let i = 0; i < 4; i++) px(ctx, x + i * 14, GROUND_Y - 4, 6, 14 + (i % 2) * 5, coral);
+    } else {
+      px(ctx, x - 14, GROUND_Y - 34, 14, 24, coral);
+    }
+  }
   if (near) {
     const bob = Math.round(Math.sin(t * 5) * 2);
     const bx = x + 6;

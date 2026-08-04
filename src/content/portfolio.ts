@@ -22,6 +22,35 @@ export const skills: string[] = [
   "Customer Support & Communication",
 ];
 
+export const education = {
+  school: "Jose Rizal Memorial State University – Main Campus",
+  degree: "Bachelor of Science in Computer Engineering",
+  period: "2019 – 2023",
+};
+
+export type Certification = {
+  name: string;
+  issuer?: string;
+  date: string;
+};
+
+export const certifications: Certification[] = [
+  { name: "Google Cybersecurity Certificate", date: "July 29, 2024" },
+  { name: "Junior Penetration Tester", issuer: "TryHackMe", date: "February 20, 2026" },
+  { name: "Electronics Processing and Servicing", date: "March 26, 2026 – May 15, 2026" },
+  { name: "Microsoft Azure AI Fundamentals", date: "June 10, 2026" },
+];
+
+export const technicalTools = [
+  "Linux",
+  "Python",
+  "React",
+  "Tailwind",
+  "Microsoft Office",
+  "Basic Networking Tools",
+  "SIEM",
+];
+
 export type Job = {
   role: string;
   company?: string;

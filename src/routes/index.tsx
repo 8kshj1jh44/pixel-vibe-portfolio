@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { GameStage } from "@/components/game/GameStage";
 
-const title = "Franz Lyster Tagalogon — Pixel Arcade Portfolio";
+const title = "Franz Lyster — Underwater Pixel Portfolio";
 const description =
-  "Play through the retro pixel portfolio of Franz Lyster L. Tagalogon: IT support technician, embedded systems programmer and freelance website developer.";
+  "Play Franz Lyster's retro portfolio: explore two pixel worlds, face underwater challenges, discover credentials, and get in touch.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,9 +25,14 @@ function Index() {
         <p className="text-lg text-muted-foreground">
           Arrows / A-D to move · Space to jump · E to interact
         </p>
-        <Link to="/resume" className="pixel-btn bg-secondary text-foreground">
-          VIEW RESUME
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <a href="mailto:franzlyster@gmail.com" className="pixel-btn bg-primary text-primary-foreground">
+            HIRE / CONTACT ME
+          </a>
+          <Link to="/resume" className="pixel-btn bg-secondary text-foreground">
+            VIEW RESUME
+          </Link>
+        </div>
       </div>
     </main>
   );
