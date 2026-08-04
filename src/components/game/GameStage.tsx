@@ -43,6 +43,7 @@ type Dialog =
   | { type: "education" }
   | { type: "certifications" }
   | { type: "tools" }
+  | { type: "dive" }
   | { type: "challenge"; boss: "fish" | "kraken"; step: "intro" | "active" | "success" }
   | { type: "contact" }
   | { type: "end" }
@@ -129,6 +130,7 @@ export function GameStage() {
     else if (s.id === "education") setDialog({ type: "education" });
     else if (s.id === "certifications") setDialog({ type: "certifications" });
     else if (s.id === "tools") setDialog({ type: "tools" });
+    else if (s.id === "dive") setDialog({ type: "dive" });
     else if (s.id === "fish" || s.id === "kraken") {
       if (completedBosses.includes(s.id)) setDialog({ type: "challenge", boss: s.id, step: "success" });
       else setDialog({ type: "challenge", boss: s.id, step: "intro" });
@@ -287,10 +289,20 @@ export function GameStage() {
           <div className="border-4 border-border bg-screen/85 px-2 py-1">
             <p className="font-display text-[0.45rem] text-accent sm:text-[0.55rem]">{zone}</p>
           </div>
-          <div className="border-4 border-border bg-screen/85 px-2 py-1">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="pointer-events-auto border-4 border-border bg-screen/85 px-2 py-1 font-display text-[0.42rem] text-foreground"
+              onClick={() => setScreen("customize")}
+              aria-label="Customize character and pet"
+            >
+              CREW
+            </button>
+            <div className="border-4 border-border bg-screen/85 px-2 py-1">
             <p className="font-display text-[0.45rem] text-cyan-crt sm:text-[0.55rem]">
               SKILLS {collected.length}/{skills.length}
             </p>
+            </div>
           </div>
         </div>
       )}
@@ -507,6 +519,16 @@ export function GameStage() {
               </li>
             ))}
           </ul>
+        </PixelDialog>
+      )}
+
+      {dialog?.type === "dive" && (
+        <PixelDialog title="LEVEL 2 — THE DEEP ARCHIVE" onClose={() => setDialog(null)}>
+          <h3 className="font-display text-sm text-cyan-crt">DIVE IN</h3>
+          <p className="mt-3">
+            The next chapter holds education, certifications, technical tools, two deep-sea
+            challenges, and the contact chamber.
+          </p>
         </PixelDialog>
       )}
 
