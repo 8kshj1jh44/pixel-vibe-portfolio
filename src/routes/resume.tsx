@@ -1,10 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { profile, skills, jobs, projects } from "@/content/portfolio";
+import {
+  profile,
+  skills,
+  jobs,
+  projects,
+  education,
+  certifications,
+  technicalTools,
+} from "@/content/portfolio";
 import { ContactTerminal } from "@/components/game/ContactTerminal";
 
 const title = "Resume — Franz Lyster L. Tagalogon | IT Support & Web Developer";
 const description =
-  "Readable resume of Franz Lyster L. Tagalogon: IT support, embedded systems, delivered websites, skills, work history and contact form.";
+  "Franz Lyster Tagalogon's résumé: IT support, web development, education, cybersecurity certifications, technical tools, projects and contact.";
 
 export const Route = createFileRoute("/resume")({
   head: () => ({
@@ -13,6 +21,8 @@ export const Route = createFileRoute("/resume")({
       { name: "description", content: description },
       { property: "og:title", content: title },
       { property: "og:description", content: description },
+      { property: "og:type", content: "profile" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: ResumePage,
@@ -51,6 +61,36 @@ function ResumePage() {
           {skills.map((s) => (
             <li key={s} className="border-4 border-border bg-secondary px-3 py-2">
               <span className="text-accent">★</span> {s}
+            </li>
+          ))}
+        </ul>
+      </Section>
+
+      <Section label="EDUCATION">
+        <article className="border-4 border-border bg-card p-4">
+          <h3 className="font-display text-[0.6rem] text-accent">{education.degree}</h3>
+          <p className="mt-2 text-cyan-crt">{education.school}</p>
+          <p className="text-muted-foreground">{education.period}</p>
+        </article>
+      </Section>
+
+      <Section label="CERTIFICATIONS">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {certifications.map((cert) => (
+            <article key={cert.name} className="border-4 border-border bg-card p-4">
+              <h3 className="font-display text-[0.55rem] text-accent">{cert.name}</h3>
+              {cert.issuer && <p className="mt-2 text-cyan-crt">{cert.issuer}</p>}
+              <p className="mt-1 text-muted-foreground">{cert.date}</p>
+            </article>
+          ))}
+        </div>
+      </Section>
+
+      <Section label="TECHNICAL TOOLS">
+        <ul className="flex flex-wrap gap-2">
+          {technicalTools.map((tool) => (
+            <li key={tool} className="border-4 border-border bg-secondary px-3 py-2">
+              <span className="text-cyan-crt">◆</span> {tool}
             </li>
           ))}
         </ul>
@@ -115,6 +155,12 @@ function ResumePage() {
 
       <Section label="CONTACT">
         <div className="pixel-box bg-card p-5">
+          <a
+            href={`mailto:${profile.email}`}
+            className="pixel-btn mb-5 inline-block bg-primary text-primary-foreground"
+          >
+            HIRE / CONTACT ME
+          </a>
           <ContactTerminal />
         </div>
       </Section>

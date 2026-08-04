@@ -12,21 +12,39 @@ import {
   drawPlayer,
   drawCoin,
   drawStation,
+  drawPet,
   zoneAt,
   type Coin,
   type Station,
+  type Appearance,
+  type CharacterPalette,
+  type CharacterAccessory,
+  type PetSpecies,
 } from "./engine";
 import { PixelDialog } from "./PixelDialog";
 import { ContactTerminal } from "./ContactTerminal";
-import { profile, skills, jobs, projects } from "@/content/portfolio";
+import {
+  profile,
+  skills,
+  jobs,
+  projects,
+  education,
+  certifications,
+  technicalTools,
+} from "@/content/portfolio";
 import landscape from "@/assets/pixel-landscape.jpg";
 
-type Screen = "title" | "rules" | "playing";
+type Screen = "title" | "rules" | "customize" | "playing";
 type Dialog =
   | { type: "about" }
   | { type: "skills" }
   | { type: "job"; index: number }
   | { type: "project"; index: number }
+  | { type: "education" }
+  | { type: "certifications" }
+  | { type: "tools" }
+  | { type: "dive" }
+  | { type: "challenge"; boss: "fish" | "kraken"; step: "intro" | "active" | "success" }
   | { type: "contact" }
   | { type: "end" }
   | null;
@@ -46,8 +64,14 @@ const STATIONS: Station[] = [
     x: 3840 + i * 300,
     label: p.label,
   })),
-  { id: "contact", kind: "terminal", x: 4980, label: "CONTACT" },
-  { id: "end", kind: "flag", x: 5280, label: "GOAL" },
+  { id: "dive", kind: "portal", x: 5180, label: "DIVE" },
+  { id: "education", kind: "sign", x: 5580, label: "EDUCATION" },
+  { id: "certifications", kind: "sign", x: 5900, label: "CERTS" },
+  { id: "fish", kind: "boss", x: 6400, label: "BIG FISH" },
+  { id: "tools", kind: "sign", x: 6860, label: "TOOLS" },
+  { id: "kraken", kind: "boss", x: 7240, label: "KRAKEN" },
+  { id: "contact", kind: "terminal", x: 7600, label: "CONTACT" },
+  { id: "end", kind: "flag", x: 7800, label: "GOAL" },
 ];
 
 const INITIAL_COINS: Coin[] = skills.map((label, i) => ({
@@ -65,6 +89,14 @@ export function GameStage() {
   const [zone, setZone] = useState(zoneAt(0));
   const [collected, setCollected] = useState<string[]>([]);
   const [pickup, setPickup] = useState<string | null>(null);
+  const [challengeProgress, setChallengeProgress] = useState(0);
+  const [completedBosses, setCompletedBosses] = useState<Array<"fish" | "kraken">>([]);
+  const [appearance, setAppearance] = useState<Appearance>({
+    palette: "aqua",
+    accessory: "mask",
+    pet: "fish",
+    petColor: "coral",
+  });
 
   const inputRef = useRef({ left: false, right: false, jump: false });
   const pausedRef = useRef(false);
@@ -74,14 +106,50 @@ export function GameStage() {
   pausedRef.current = screen !== "playing" || dialog !== null;
   dialogRef.current = dialog;
 
+  useEffect(() => {
+    const saved = window.localStorage.getItem("franz-arcade-appearance");
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved) as Appearance;
+      if (parsed.palette && parsed.accessory && parsed.pet && parsed.petColor) setAppearance(parsed);
+    } catch {
+      window.localStorage.removeItem("franz-arcade-appearance");
+    }
+  }, []);
+
+  const updateAppearance = useCallback((next: Appearance) => {
+    setAppearance(next);
+    window.localStorage.setItem("franz-arcade-appearance", JSON.stringify(next));
+  }, []);
+
   const openStation = useCallback((s: Station) => {
     if (s.id === "about") setDialog({ type: "about" });
     else if (s.id === "skills") setDialog({ type: "skills" });
     else if (s.id === "contact") setDialog({ type: "contact" });
     else if (s.id === "end") setDialog({ type: "end" });
+    else if (s.id === "education") setDialog({ type: "education" });
+    else if (s.id === "certifications") setDialog({ type: "certifications" });
+    else if (s.id === "tools") setDialog({ type: "tools" });
+    else if (s.id === "dive") setDialog({ type: "dive" });
+    else if (s.id === "fish" || s.id === "kraken") {
+      if (completedBosses.includes(s.id)) setDialog({ type: "challenge", boss: s.id, step: "success" });
+      else setDialog({ type: "challenge", boss: s.id, step: "intro" });
+    }
     else if (s.id.startsWith("job-")) setDialog({ type: "job", index: Number(s.id.slice(4)) });
     else if (s.id.startsWith("project-"))
       setDialog({ type: "project", index: Number(s.id.slice(8)) });
+  }, [completedBosses]);
+
+  const advanceChallenge = useCallback((boss: "fish" | "kraken") => {
+    setChallengeProgress((progress) => {
+      const next = progress + 1;
+      if (next >= 4) {
+        setCompletedBosses((done) => (done.includes(boss) ? done : [...done, boss]));
+        setDialog({ type: "challenge", boss, step: "success" });
+        return 4;
+      }
+      return next;
+    });
   }, []);
 
   const interact = useCallback(() => {
@@ -170,13 +238,14 @@ export function GameStage() {
       drawBackground(ctx, camX);
       for (const s of STATIONS) drawStation(ctx, s, camX, elapsed, nearRef.current?.id === s.id);
       for (const c of coins) if (!c.taken) drawCoin(ctx, c, camX, elapsed);
-      drawPlayer(ctx, player, camX);
+      drawPet(ctx, player, camX, elapsed, appearance);
+      drawPlayer(ctx, player, camX, appearance);
 
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [screen]);
+  }, [screen, appearance]);
 
   const hold = (key: "left" | "right" | "jump", value: boolean) => ({
     onPointerDown: (e: React.PointerEvent) => {
@@ -187,6 +256,9 @@ export function GameStage() {
       inputRef.current[key] = false;
     },
     onPointerLeave: () => {
+      inputRef.current[key] = false;
+    },
+    onPointerCancel: () => {
       inputRef.current[key] = false;
     },
   });
@@ -217,10 +289,20 @@ export function GameStage() {
           <div className="border-4 border-border bg-screen/85 px-2 py-1">
             <p className="font-display text-[0.45rem] text-accent sm:text-[0.55rem]">{zone}</p>
           </div>
-          <div className="border-4 border-border bg-screen/85 px-2 py-1">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="pointer-events-auto border-4 border-border bg-screen/85 px-2 py-1 font-display text-[0.42rem] text-foreground"
+              onClick={() => setScreen("customize")}
+              aria-label="Customize character and pet"
+            >
+              CREW
+            </button>
+            <div className="border-4 border-border bg-screen/85 px-2 py-1">
             <p className="font-display text-[0.45rem] text-cyan-crt sm:text-[0.55rem]">
               SKILLS {collected.length}/{skills.length}
             </p>
+            </div>
           </div>
         </div>
       )}
@@ -234,17 +316,17 @@ export function GameStage() {
 
       {/* Touch controls */}
       {screen === "playing" && !dialog && (
-        <div className="absolute inset-x-0 bottom-0 z-20 flex items-end justify-between p-3 select-none sm:hidden">
+        <div className="touch-controls absolute inset-x-0 bottom-0 z-20 flex items-end justify-between p-3 select-none sm:hidden">
           <div className="flex gap-2">
             <button
-              className="pixel-btn bg-secondary text-foreground"
+              className="pixel-btn touch-key bg-secondary text-foreground"
               aria-label="Move left"
               {...hold("left", true)}
             >
               ◀
             </button>
             <button
-              className="pixel-btn bg-secondary text-foreground"
+              className="pixel-btn touch-key bg-secondary text-foreground"
               aria-label="Move right"
               {...hold("right", true)}
             >
@@ -253,14 +335,14 @@ export function GameStage() {
           </div>
           <div className="flex gap-2">
             <button
-              className="pixel-btn bg-accent text-accent-foreground"
+              className="pixel-btn touch-key bg-accent text-accent-foreground"
               aria-label="Interact"
               onClick={interact}
             >
-              E
+              ACT
             </button>
             <button
-              className="pixel-btn bg-primary text-primary-foreground"
+              className="pixel-btn touch-key bg-primary text-primary-foreground"
               aria-label="Jump"
               {...hold("jump", true)}
             >
@@ -283,7 +365,7 @@ export function GameStage() {
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <button
               className="pixel-btn bg-primary text-primary-foreground"
-              onClick={() => setScreen("playing")}
+              onClick={() => setScreen("customize")}
             >
               START
             </button>
@@ -299,6 +381,15 @@ export function GameStage() {
           </div>
           <p className="blink mt-6 font-display text-[0.5rem] text-foreground">PRESS START</p>
         </div>
+      )}
+
+      {screen === "customize" && (
+        <Customizer
+          appearance={appearance}
+          onChange={updateAppearance}
+          onPlay={() => setScreen("playing")}
+          onBack={() => setScreen("title")}
+        />
       )}
 
       {/* Rules screen */}
@@ -317,7 +408,7 @@ export function GameStage() {
             <div className="mt-5 flex gap-3">
               <button
                 className="pixel-btn bg-primary text-primary-foreground"
-                onClick={() => setScreen("playing")}
+                onClick={() => setScreen("customize")}
               >
                 YES
               </button>
@@ -397,6 +488,64 @@ export function GameStage() {
         </PixelDialog>
       )}
 
+      {dialog?.type === "education" && (
+        <PixelDialog title="DEEP ARCHIVE — EDUCATION" onClose={() => setDialog(null)}>
+          <h3 className="font-display text-[0.6rem] text-accent">{education.degree}</h3>
+          <p className="mt-2 text-cyan-crt">{education.school}</p>
+          <p className="mt-2 text-muted-foreground">{education.period}</p>
+        </PixelDialog>
+      )}
+
+      {dialog?.type === "certifications" && (
+        <PixelDialog title="CERTIFICATION VAULT" onClose={() => setDialog(null)}>
+          <ul className="grid gap-3 sm:grid-cols-2">
+            {certifications.map((cert) => (
+              <li key={cert.name} className="border-4 border-border bg-secondary px-3 py-3">
+                <strong className="text-accent">{cert.name}</strong>
+                {cert.issuer && <span className="block text-cyan-crt">{cert.issuer}</span>}
+                <span className="block text-muted-foreground">{cert.date}</span>
+              </li>
+            ))}
+          </ul>
+        </PixelDialog>
+      )}
+
+      {dialog?.type === "tools" && (
+        <PixelDialog title="TOOL REEF" onClose={() => setDialog(null)}>
+          <ul className="flex flex-wrap gap-2">
+            {technicalTools.map((tool) => (
+              <li key={tool} className="border-4 border-border bg-secondary px-3 py-2">
+                <span className="text-cyan-crt">◆</span> {tool}
+              </li>
+            ))}
+          </ul>
+        </PixelDialog>
+      )}
+
+      {dialog?.type === "dive" && (
+        <PixelDialog title="LEVEL 2 — THE DEEP ARCHIVE" onClose={() => setDialog(null)}>
+          <h3 className="font-display text-sm text-cyan-crt">DIVE IN</h3>
+          <p className="mt-3">
+            The next chapter holds education, certifications, technical tools, two deep-sea
+            challenges, and the contact chamber.
+          </p>
+        </PixelDialog>
+      )}
+
+      {dialog?.type === "challenge" && (
+        <ChallengeDialog
+          boss={dialog.boss}
+          step={dialog.step}
+          progress={challengeProgress}
+          onStart={() => {
+            setChallengeProgress(0);
+            setDialog({ type: "challenge", boss: dialog.boss, step: "active" });
+          }}
+          onAdvance={() => advanceChallenge(dialog.boss)}
+          onClose={() => setDialog(null)}
+        />
+      )}
+
       {dialog?.type === "contact" && (
         <PixelDialog title="CONTACT TERMINAL" onClose={() => setDialog(null)}>
           <ContactTerminal />
@@ -408,9 +557,13 @@ export function GameStage() {
           title="STAGE CLEAR"
           onClose={() => setDialog(null)}
           footer={
-            <Link to="/resume" className="pixel-btn bg-accent text-accent-foreground">
-              READ FULL RESUME
-            </Link>
+            <button
+              type="button"
+              className="pixel-btn bg-primary text-primary-foreground"
+              onClick={() => setDialog({ type: "contact" })}
+            >
+              HIRE / CONTACT ME
+            </button>
           }
         >
           <h3 className="text-glow font-display text-base text-accent">THANK YOU</h3>
@@ -424,6 +577,112 @@ export function GameStage() {
         </PixelDialog>
       )}
     </div>
+  );
+}
+
+function Customizer({
+  appearance,
+  onChange,
+  onPlay,
+  onBack,
+}: {
+  appearance: Appearance;
+  onChange: (value: Appearance) => void;
+  onPlay: () => void;
+  onBack: () => void;
+}) {
+  const palettes: CharacterPalette[] = ["coral", "aqua", "lime"];
+  const accessories: CharacterAccessory[] = ["mask", "cap", "headset"];
+  const pets: PetSpecies[] = ["fish", "turtle", "octopus"];
+  return (
+    <div className="fixed inset-0 z-30 flex items-center justify-center overflow-y-auto bg-screen/95 p-3 sm:absolute sm:bg-screen/90">
+      <div className="pixel-box w-full max-w-2xl bg-card p-4 sm:p-6">
+        <h2 className="font-display text-xs text-accent">CUSTOMIZE YOUR CREW</h2>
+        <CustomizerRow label="SUIT COLOR" options={palettes} value={appearance.palette} onPick={(palette) => onChange({ ...appearance, palette })} />
+        <CustomizerRow label="ACCESSORY" options={accessories} value={appearance.accessory} onPick={(accessory) => onChange({ ...appearance, accessory })} />
+        <CustomizerRow label="PET" options={pets} value={appearance.pet} onPick={(pet) => onChange({ ...appearance, pet })} />
+        <CustomizerRow label="PET COLOR" options={palettes} value={appearance.petColor} onPick={(petColor) => onChange({ ...appearance, petColor })} />
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button type="button" className="pixel-btn bg-primary text-primary-foreground" onClick={onPlay}>PLAY</button>
+          <button type="button" className="pixel-btn bg-secondary text-foreground" onClick={onBack}>BACK</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CustomizerRow<T extends string>({
+  label,
+  options,
+  value,
+  onPick,
+}: {
+  label: string;
+  options: T[];
+  value: T;
+  onPick: (option: T) => void;
+}) {
+  return (
+    <fieldset className="mt-4">
+      <legend className="font-display text-[0.5rem] text-cyan-crt">{label}</legend>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {options.map((option) => (
+          <button
+            type="button"
+            key={option}
+            onClick={() => onPick(option)}
+            className={`pixel-btn ${value === option ? "bg-accent text-accent-foreground" : "bg-secondary text-foreground"}`}
+          >
+            {option.toUpperCase()}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+function ChallengeDialog({
+  boss,
+  step,
+  progress,
+  onStart,
+  onAdvance,
+  onClose,
+}: {
+  boss: "fish" | "kraken";
+  step: "intro" | "active" | "success";
+  progress: number;
+  onStart: () => void;
+  onAdvance: () => void;
+  onClose: () => void;
+}) {
+  const fish = boss === "fish";
+  const labels = fish ? ["TOP", "LOW", "TOP", "LOW"] : ["CYAN", "CORAL", "LIME", "CYAN"];
+  return (
+    <PixelDialog
+      title={fish ? "BIG FISH — CURRENT RUN" : "KRAKEN — SIGNAL SEQUENCE"}
+      onClose={onClose}
+      footer={step === "intro" ? <button type="button" className="pixel-btn bg-primary text-primary-foreground" onClick={onStart}>START CHALLENGE</button> : undefined}
+    >
+      {step === "intro" && <p>{fish ? "Read the charge pattern and clear four safe lanes." : "Activate four signal terminals in the displayed order."} This short challenge never resets your portfolio progress.</p>}
+      {step === "active" && (
+        <div className="text-center">
+          <p className="font-display text-[0.55rem] text-cyan-crt">STEP {progress + 1} / 4</p>
+          <div className="my-5 border-4 border-accent bg-screen p-5">
+            <span className="font-display text-base text-accent">{labels[progress]}</span>
+          </div>
+          <button type="button" className="pixel-btn bg-primary text-primary-foreground" onClick={onAdvance}>
+            {fish ? "DODGE NOW" : "ACTIVATE"}
+          </button>
+        </div>
+      )}
+      {step === "success" && (
+        <div>
+          <h3 className="font-display text-sm text-lime-crt">CHALLENGE CLEAR</h3>
+          <p className="mt-3">The route ahead is open. Continue deeper into the portfolio.</p>
+        </div>
+      )}
+    </PixelDialog>
   );
 }
 

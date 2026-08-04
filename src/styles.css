@@ -228,3 +228,20 @@
   animation: pixel-float 1.6s steps(4, end) infinite;
 }
 
+@utility touch-key {
+  min-width: 3.25rem;
+  min-height: 3.25rem;
+  touch-action: none;
+}
+
+.touch-controls {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blink,
+  .float-pixel {
+    animation: none;
+  }
+}
+
