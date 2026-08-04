@@ -595,7 +595,7 @@ function Customizer({
   const accessories: CharacterAccessory[] = ["mask", "cap", "headset"];
   const pets: PetSpecies[] = ["fish", "turtle", "octopus"];
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-screen/90 p-3">
+    <div className="fixed inset-0 z-30 flex items-center justify-center overflow-y-auto bg-screen/95 p-3 sm:absolute sm:bg-screen/90">
       <div className="pixel-box w-full max-w-2xl bg-card p-4 sm:p-6">
         <h2 className="font-display text-xs text-accent">CUSTOMIZE YOUR CREW</h2>
         <CustomizerRow label="SUIT COLOR" options={palettes} value={appearance.palette} onPick={(palette) => onChange({ ...appearance, palette })} />
