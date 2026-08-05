@@ -430,7 +430,7 @@ export function GameStage() {
 
       {/* Title screen */}
       {screen === "title" && (
-        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-screen/70 px-4 text-center">
+        <div className="fixed inset-0 z-30 flex flex-col items-center justify-center overflow-y-auto bg-screen/95 px-4 py-6 text-center sm:absolute sm:bg-screen/70 sm:py-0">
           <p className="font-display text-[0.5rem] text-cyan-crt sm:text-xs">LET&apos;S PLAY</p>
           <h1 className="text-glow mt-3 font-display text-xl text-accent sm:text-4xl">
             FRANZ LYSTER
@@ -467,7 +467,7 @@ export function GameStage() {
               VIEW PROJECTS
             </button>
           </div>
-          <p className="blink mt-6 font-display text-[0.5rem] text-foreground">PRESS START</p>
+          <p className="blink mt-4 font-display text-[0.5rem] text-foreground sm:mt-6">PRESS START</p>
         </div>
       )}
 
