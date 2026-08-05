@@ -32,6 +32,14 @@ export type Coin = {
   label: string;
 };
 
+export type Obstacle = {
+  id: string;
+  x: number;
+  width: number;
+  height: number;
+  kind: "crate" | "spikes" | "mine" | "coral";
+};
+
 export type Zone = { name: string; from: number; to: number };
 
 export const ZONES: Zone[] = [
@@ -314,6 +322,68 @@ export function drawCoin(ctx: CanvasRenderingContext2D, c: Coin, camX: number, t
   px(ctx, x + (10 - w) / 2 + 1, y + 2, Math.max(1, w - 4), 5, "#fff0b8");
 }
 
+export function drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle, camX: number, t: number) {
+  const x = obstacle.x - camX;
+  if (x < -60 || x > VIEW_W + 60) return;
+  const y = GROUND_Y - obstacle.height;
+  if (obstacle.kind === "crate") {
+    px(ctx, x, y, obstacle.width, obstacle.height, "#6b3a1f");
+    px(ctx, x + 3, y + 3, obstacle.width - 6, obstacle.height - 6, "#b96835");
+    px(ctx, x + 6, y + 6, obstacle.width - 12, 4, "#ffe14d");
+  } else if (obstacle.kind === "spikes") {
+    for (let i = 0; i < obstacle.width; i += 8) {
+      px(ctx, x + i, GROUND_Y - 4, 8, 4, "#d9d2e6");
+      px(ctx, x + i + 2, GROUND_Y - 8, 4, 4, "#f5e9ff");
+    }
+  } else if (obstacle.kind === "mine") {
+    const bob = Math.round(Math.sin(t * 3 + obstacle.x) * 3);
+    px(ctx, x + 4, y + bob, obstacle.width - 8, obstacle.height, "#132a3a");
+    px(ctx, x, y + 5 + bob, obstacle.width, obstacle.height - 10, "#132a3a");
+    px(ctx, x + obstacle.width / 2 - 2, y + obstacle.height / 2 - 2 + bob, 4, 4, "#ff5f88");
+  } else {
+    for (let i = 0; i < obstacle.width; i += 9) {
+      px(ctx, x + i, GROUND_Y - 5, 5, 5, "#d83c88");
+      px(ctx, x + i + 2, y + (i % 3) * 3, 4, obstacle.height - 5, "#ff7198");
+    }
+  }
+}
+
+export function drawCrevice(ctx: CanvasRenderingContext2D, camX: number) {
+  const x = 5140 - camX;
+  if (x < -80 || x > VIEW_W + 80) return;
+  px(ctx, x, GROUND_Y - 3, 76, VIEW_H - GROUND_Y + 3, "#12051d");
+  px(ctx, x - 5, GROUND_Y - 3, 8, 8, "#43142c");
+  px(ctx, x + 70, GROUND_Y - 3, 8, 8, "#43142c");
+}
+
+export function drawMovingBoss(
+  ctx: CanvasRenderingContext2D,
+  boss: "fish" | "kraken",
+  worldX: number,
+  camX: number,
+  t: number,
+) {
+  const drift = Math.sin(t * (boss === "fish" ? 1.8 : 1.15)) * (boss === "fish" ? 28 : 18);
+  const bob = Math.sin(t * 2.4) * 7;
+  const x = worldX - camX + drift;
+  const y = GROUND_Y - 66 + bob;
+  if (x < -100 || x > VIEW_W + 100) return;
+  if (boss === "fish") {
+    px(ctx, x, y, 58, 30, "#33d4cc");
+    px(ctx, x - 15, y - 7, 16, 44, "#1fa7ae");
+    px(ctx, x + 43, y + 8, 6, 6, "#ffe14d");
+    px(ctx, x + 50, y + 9, 4, 3, "#08130e");
+  } else {
+    px(ctx, x, y - 8, 58, 38, "#d83c88");
+    px(ctx, x + 12, y + 2, 5, 5, "#ffe14d");
+    px(ctx, x + 39, y + 2, 5, 5, "#ffe14d");
+    for (let i = 0; i < 5; i++) {
+      const wave = Math.round(Math.sin(t * 3 + i) * 5);
+      px(ctx, x + i * 12, y + 28, 6, 25 + wave, "#d83c88");
+    }
+  }
+}
+
 function drawSign(ctx: CanvasRenderingContext2D, x: number, label: string) {
   px(ctx, x + 10, GROUND_Y - 26, 4, 26, "#6b3a1f");
   px(ctx, x - 14, GROUND_Y - 52, 52, 28, "#2b1450");
@@ -380,17 +450,7 @@ export function drawStation(
     px(ctx, x + 5, GROUND_Y - 45, 28, 40, "#59e4e8");
     px(ctx, x + 10, GROUND_Y - 38, 18, 30, "#087b9a");
   }
-  if (s.kind === "boss") {
-    const coral = s.id.includes("kraken") ? "#d83c88" : "#33d4cc";
-    px(ctx, x, GROUND_Y - 44, 54, 44, coral);
-    px(ctx, x + 10, GROUND_Y - 34, 5, 5, "#ffe14d");
-    px(ctx, x + 34, GROUND_Y - 34, 5, 5, "#ffe14d");
-    if (s.id.includes("kraken")) {
-      for (let i = 0; i < 4; i++) px(ctx, x + i * 14, GROUND_Y - 4, 6, 14 + (i % 2) * 5, coral);
-    } else {
-      px(ctx, x - 14, GROUND_Y - 34, 14, 24, coral);
-    }
-  }
+  // Boss sprites are drawn separately so they can patrol and bob.
   if (near) {
     const bob = Math.round(Math.sin(t * 5) * 2);
     const bx = x + 6;

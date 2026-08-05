@@ -13,10 +13,14 @@ import {
   drawCoin,
   drawStation,
   drawPet,
+  drawObstacle,
+  drawCrevice,
+  drawMovingBoss,
   zoneAt,
   type Coin,
   type Station,
   type Appearance,
+  type Obstacle,
   type CharacterPalette,
   type CharacterAccessory,
   type PetSpecies,
@@ -40,10 +44,10 @@ type Dialog =
   | { type: "skills" }
   | { type: "job"; index: number }
   | { type: "project"; index: number }
+  | { type: "projects" }
   | { type: "education" }
   | { type: "certifications" }
   | { type: "tools" }
-  | { type: "dive" }
   | { type: "challenge"; boss: "fish" | "kraken"; step: "intro" | "active" | "success" }
   | { type: "contact" }
   | { type: "end" }
@@ -64,7 +68,6 @@ const STATIONS: Station[] = [
     x: 3840 + i * 300,
     label: p.label,
   })),
-  { id: "dive", kind: "portal", x: 5180, label: "DIVE" },
   { id: "education", kind: "sign", x: 5580, label: "EDUCATION" },
   { id: "certifications", kind: "sign", x: 5900, label: "CERTS" },
   { id: "fish", kind: "boss", x: 6400, label: "BIG FISH" },
@@ -72,6 +75,17 @@ const STATIONS: Station[] = [
   { id: "kraken", kind: "boss", x: 7240, label: "KRAKEN" },
   { id: "contact", kind: "terminal", x: 7600, label: "CONTACT" },
   { id: "end", kind: "flag", x: 7800, label: "GOAL" },
+];
+
+const OBSTACLES: Obstacle[] = [
+  { id: "crate-1", x: 620, width: 28, height: 28, kind: "crate" },
+  { id: "spikes-1", x: 1510, width: 42, height: 8, kind: "spikes" },
+  { id: "crate-2", x: 2860, width: 34, height: 34, kind: "crate" },
+  { id: "spikes-2", x: 4380, width: 50, height: 8, kind: "spikes" },
+  { id: "mine-1", x: 5700, width: 28, height: 24, kind: "mine" },
+  { id: "coral-1", x: 6120, width: 42, height: 26, kind: "coral" },
+  { id: "mine-2", x: 6750, width: 30, height: 26, kind: "mine" },
+  { id: "coral-2", x: 7080, width: 46, height: 30, kind: "coral" },
 ];
 
 const INITIAL_COINS: Coin[] = skills.map((label, i) => ({
@@ -90,6 +104,8 @@ export function GameStage() {
   const [collected, setCollected] = useState<string[]>([]);
   const [pickup, setPickup] = useState<string | null>(null);
   const [challengeProgress, setChallengeProgress] = useState(0);
+  const [challengeError, setChallengeError] = useState("");
+  const [transition, setTransition] = useState<"none" | "falling" | "blackout">("none");
   const [completedBosses, setCompletedBosses] = useState<Array<"fish" | "kraken">>([]);
   const [appearance, setAppearance] = useState<Appearance>({
     palette: "aqua",
@@ -130,7 +146,6 @@ export function GameStage() {
     else if (s.id === "education") setDialog({ type: "education" });
     else if (s.id === "certifications") setDialog({ type: "certifications" });
     else if (s.id === "tools") setDialog({ type: "tools" });
-    else if (s.id === "dive") setDialog({ type: "dive" });
     else if (s.id === "fish" || s.id === "kraken") {
       if (completedBosses.includes(s.id)) setDialog({ type: "challenge", boss: s.id, step: "success" });
       else setDialog({ type: "challenge", boss: s.id, step: "intro" });
@@ -140,7 +155,12 @@ export function GameStage() {
       setDialog({ type: "project", index: Number(s.id.slice(8)) });
   }, [completedBosses]);
 
-  const advanceChallenge = useCallback((boss: "fish" | "kraken") => {
+  const advanceChallenge = useCallback((boss: "fish" | "kraken", correct: boolean) => {
+    if (!correct) {
+      setChallengeError("MISS! Try another answer.");
+      return;
+    }
+    setChallengeError("");
     setChallengeProgress((progress) => {
       const next = progress + 1;
       if (next >= 4) {
@@ -200,6 +220,8 @@ export function GameStage() {
     let last = performance.now();
     let elapsed = 0;
     let lastZone = "";
+    let transitionPhase: "none" | "falling" | "blackout" = "none";
+    let transitionStarted = 0;
 
     const frame = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
@@ -207,7 +229,46 @@ export function GameStage() {
 
       if (!pausedRef.current) {
         elapsed += dt;
-        stepPlayer(player, inputRef.current, dt);
+        const previousX = player.x;
+        if (transitionPhase === "none") stepPlayer(player, inputRef.current, dt);
+
+        if (transitionPhase === "none") {
+          const playerRight = player.x + 14;
+          const playerBottom = player.y + 22;
+          for (const obstacle of OBSTACLES) {
+            const obstacleTop = GROUND_Y - obstacle.height;
+            const overlaps = playerRight > obstacle.x && player.x < obstacle.x + obstacle.width && playerBottom > obstacleTop;
+            if (overlaps) {
+              player.x = previousX;
+              player.vx = 0;
+              break;
+            }
+          }
+          if (player.x >= 5128 && player.x < 5220) {
+            transitionPhase = "falling";
+            transitionStarted = elapsed;
+            player.vx = 34;
+            player.vy = 70;
+            setTransition("falling");
+          }
+        } else if (transitionPhase === "falling") {
+          player.x += player.vx * dt;
+          player.y += player.vy * dt;
+          player.vy += 180 * dt;
+          player.anim += dt * 12;
+          if (elapsed - transitionStarted > 1.05) {
+            transitionPhase = "blackout";
+            transitionStarted = elapsed;
+            setTransition("blackout");
+          }
+        } else if (elapsed - transitionStarted > 1.35) {
+          transitionPhase = "none";
+          player.x = 5420;
+          player.y = GROUND_Y - 22;
+          player.vx = 0;
+          player.vy = 0;
+          setTransition("none");
+        }
 
         const cx = playerCenter(player);
         camX = Math.max(0, Math.min(cx - VIEW_W / 2, WORLD_W - VIEW_W));
@@ -236,7 +297,11 @@ export function GameStage() {
       }
 
       drawBackground(ctx, camX);
+      drawCrevice(ctx, camX);
+      for (const obstacle of OBSTACLES) drawObstacle(ctx, obstacle, camX, elapsed);
       for (const s of STATIONS) drawStation(ctx, s, camX, elapsed, nearRef.current?.id === s.id);
+      drawMovingBoss(ctx, "fish", 6400, camX, elapsed);
+      drawMovingBoss(ctx, "kraken", 7240, camX, elapsed);
       for (const c of coins) if (!c.taken) drawCoin(ctx, c, camX, elapsed);
       drawPet(ctx, player, camX, elapsed, appearance);
       drawPlayer(ctx, player, camX, appearance);
@@ -304,6 +369,17 @@ export function GameStage() {
             </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {transition === "falling" && (
+        <div className="pointer-events-none absolute inset-x-0 top-1/3 z-20 text-center">
+          <p className="font-display text-[0.55rem] text-accent sm:text-xs">WATCH YOUR STEP!</p>
+        </div>
+      )}
+      {transition === "blackout" && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-screen">
+          <p className="blink font-display text-[0.55rem] text-cyan-crt">SIGNAL LOST...</p>
         </div>
       )}
 
@@ -378,6 +454,18 @@ export function GameStage() {
             <Link to="/resume" className="pixel-btn bg-accent text-accent-foreground">
               SKIP GAME
             </Link>
+            <button
+              className="pixel-btn bg-primary text-primary-foreground"
+              onClick={() => setDialog({ type: "contact" })}
+            >
+              HIRE ME
+            </button>
+            <button
+              className="pixel-btn bg-secondary text-foreground"
+              onClick={() => setDialog({ type: "projects" })}
+            >
+              VIEW PROJECTS
+            </button>
           </div>
           <p className="blink mt-6 font-display text-[0.5rem] text-foreground">PRESS START</p>
         </div>
@@ -488,6 +576,24 @@ export function GameStage() {
         </PixelDialog>
       )}
 
+      {dialog?.type === "projects" && (
+        <PixelDialog title="DELIVERED WEBSITES" onClose={() => setDialog(null)}>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {projects.map((project, index) => (
+              <button
+                type="button"
+                key={project.label}
+                onClick={() => setDialog({ type: "project", index })}
+                className="border-4 border-border bg-secondary p-2 text-left active:translate-y-1"
+              >
+                <img src={project.image} alt={`${project.name} preview`} className="h-24 w-full object-cover" />
+                <span className="mt-2 block font-display text-[0.45rem] text-accent">{project.name}</span>
+              </button>
+            ))}
+          </div>
+        </PixelDialog>
+      )}
+
       {dialog?.type === "education" && (
         <PixelDialog title="DEEP ARCHIVE — EDUCATION" onClose={() => setDialog(null)}>
           <h3 className="font-display text-[0.6rem] text-accent">{education.degree}</h3>
@@ -522,26 +628,18 @@ export function GameStage() {
         </PixelDialog>
       )}
 
-      {dialog?.type === "dive" && (
-        <PixelDialog title="LEVEL 2 — THE DEEP ARCHIVE" onClose={() => setDialog(null)}>
-          <h3 className="font-display text-sm text-cyan-crt">DIVE IN</h3>
-          <p className="mt-3">
-            The next chapter holds education, certifications, technical tools, two deep-sea
-            challenges, and the contact chamber.
-          </p>
-        </PixelDialog>
-      )}
-
       {dialog?.type === "challenge" && (
         <ChallengeDialog
           boss={dialog.boss}
           step={dialog.step}
           progress={challengeProgress}
+          error={challengeError}
           onStart={() => {
             setChallengeProgress(0);
+            setChallengeError("");
             setDialog({ type: "challenge", boss: dialog.boss, step: "active" });
           }}
-          onAdvance={() => advanceChallenge(dialog.boss)}
+          onAnswer={(correct) => advanceChallenge(dialog.boss, correct)}
           onClose={() => setDialog(null)}
         />
       )}
