@@ -21,6 +21,7 @@ import {
   type Station,
   type Appearance,
   type Obstacle,
+  type BossKind,
   type CharacterPalette,
   type CharacterAccessory,
   type PetSpecies,
@@ -38,6 +39,8 @@ import {
 } from "@/content/portfolio";
 import landscape from "@/assets/pixel-landscape.jpg";
 
+type TransitionPhase = "none" | "quake" | "collapse" | "falling" | "splash" | "blackout" | "card";
+
 type Screen = "title" | "rules" | "customize" | "playing";
 type Dialog =
   | { type: "about" }
@@ -48,7 +51,7 @@ type Dialog =
   | { type: "education" }
   | { type: "certifications" }
   | { type: "tools" }
-  | { type: "challenge"; boss: "fish" | "kraken"; step: "intro" | "active" | "success" }
+  | { type: "challenge"; boss: BossKind; step: "intro" | "active" | "success" }
   | { type: "contact" }
   | { type: "end" }
   | null;
@@ -70,6 +73,8 @@ const STATIONS: Station[] = [
   })),
   { id: "education", kind: "sign", x: 5580, label: "EDUCATION" },
   { id: "certifications", kind: "sign", x: 5900, label: "CERTS" },
+  { id: "golem", kind: "boss", x: 4540, label: "SIGNAL GOLEM" },
+  { id: "angler", kind: "boss", x: 6080, label: "ANGLERFISH" },
   { id: "fish", kind: "boss", x: 6400, label: "BIG FISH" },
   { id: "tools", kind: "sign", x: 6860, label: "TOOLS" },
   { id: "kraken", kind: "boss", x: 7240, label: "KRAKEN" },
@@ -86,7 +91,22 @@ const OBSTACLES: Obstacle[] = [
   { id: "coral-1", x: 6120, width: 42, height: 26, kind: "coral" },
   { id: "mine-2", x: 6750, width: 30, height: 26, kind: "mine" },
   { id: "coral-2", x: 7080, width: 46, height: 30, kind: "coral" },
+  { id: "crate-3", x: 1180, width: 30, height: 30, kind: "crate" },
+  { id: "crate-4", x: 1230, width: 30, height: 58, kind: "crate" },
+  { id: "crate-5", x: 3320, width: 32, height: 44, kind: "crate" },
 ];
+
+/** Crates and coral are solid platforms you can stand on. */
+const SOLIDS = OBSTACLES.filter((o) => o.kind === "crate" || o.kind === "coral");
+
+const BOSS_IDS: BossKind[] = ["fish", "kraken", "golem", "angler"];
+
+const BOSS_TITLES: Record<BossKind, string> = {
+  fish: "BIG FISH",
+  kraken: "KRAKEN",
+  golem: "SIGNAL GOLEM",
+  angler: "ANGLERFISH",
+};
 
 const INITIAL_COINS: Coin[] = skills.map((label, i) => ({
   id: `skill-${i}`,
@@ -105,8 +125,8 @@ export function GameStage() {
   const [pickup, setPickup] = useState<string | null>(null);
   const [challengeProgress, setChallengeProgress] = useState(0);
   const [challengeError, setChallengeError] = useState("");
-  const [transition, setTransition] = useState<"none" | "falling" | "blackout">("none");
-  const [completedBosses, setCompletedBosses] = useState<Array<"fish" | "kraken">>([]);
+  const [transition, setTransition] = useState<TransitionPhase>("none");
+  const [completedBosses, setCompletedBosses] = useState<BossKind[]>([]);
   const [appearance, setAppearance] = useState<Appearance>({
     palette: "aqua",
     accessory: "mask",
@@ -146,16 +166,17 @@ export function GameStage() {
     else if (s.id === "education") setDialog({ type: "education" });
     else if (s.id === "certifications") setDialog({ type: "certifications" });
     else if (s.id === "tools") setDialog({ type: "tools" });
-    else if (s.id === "fish" || s.id === "kraken") {
-      if (completedBosses.includes(s.id)) setDialog({ type: "challenge", boss: s.id, step: "success" });
-      else setDialog({ type: "challenge", boss: s.id, step: "intro" });
+    else if (BOSS_IDS.includes(s.id as BossKind)) {
+      const boss = s.id as BossKind;
+      if (completedBosses.includes(boss)) setDialog({ type: "challenge", boss, step: "success" });
+      else setDialog({ type: "challenge", boss, step: "intro" });
     }
     else if (s.id.startsWith("job-")) setDialog({ type: "job", index: Number(s.id.slice(4)) });
     else if (s.id.startsWith("project-"))
       setDialog({ type: "project", index: Number(s.id.slice(8)) });
   }, [completedBosses]);
 
-  const advanceChallenge = useCallback((boss: "fish" | "kraken", correct: boolean) => {
+  const advanceChallenge = useCallback((boss: BossKind, correct: boolean) => {
     if (!correct) {
       setChallengeError("MISS! Try another answer.");
       return;
@@ -220,8 +241,10 @@ export function GameStage() {
     let last = performance.now();
     let elapsed = 0;
     let lastZone = "";
-    let transitionPhase: "none" | "falling" | "blackout" = "none";
+    let transitionPhase: TransitionPhase = "none";
     let transitionStarted = 0;
+    let shake = 0;
+    let dived = false;
 
     const frame = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
@@ -229,44 +252,63 @@ export function GameStage() {
 
       if (!pausedRef.current) {
         elapsed += dt;
-        const previousX = player.x;
-        if (transitionPhase === "none") stepPlayer(player, inputRef.current, dt);
-
         if (transitionPhase === "none") {
-          const playerRight = player.x + 14;
-          const playerBottom = player.y + 22;
-          for (const obstacle of OBSTACLES) {
-            const obstacleTop = GROUND_Y - obstacle.height;
-            const overlaps = playerRight > obstacle.x && player.x < obstacle.x + obstacle.width && playerBottom > obstacleTop;
-            if (overlaps) {
-              player.x = previousX;
-              player.vx = 0;
-              break;
-            }
+          stepPlayer(player, inputRef.current, dt, SOLIDS);
+          if (!dived && player.x >= 5040) {
+            dived = true;
+            transitionPhase = "quake";
+            transitionStarted = elapsed;
+            setTransition("quake");
           }
-          if (player.x >= 5128 && player.x < 5220) {
+        } else if (transitionPhase === "quake") {
+          stepPlayer(player, { left: false, right: true, jump: false }, dt, SOLIDS);
+          shake = 3;
+          if (elapsed - transitionStarted > 1.4) {
+            transitionPhase = "collapse";
+            transitionStarted = elapsed;
+            setTransition("collapse");
+          }
+        } else if (transitionPhase === "collapse") {
+          shake = 6;
+          player.vx = 0;
+          if (elapsed - transitionStarted > 0.7) {
             transitionPhase = "falling";
             transitionStarted = elapsed;
-            player.vx = 34;
+            player.vx = 26;
             player.vy = 70;
             setTransition("falling");
           }
         } else if (transitionPhase === "falling") {
+          shake = 2;
           player.x += player.vx * dt;
           player.y += player.vy * dt;
-          player.vy += 180 * dt;
-          player.anim += dt * 12;
-          if (elapsed - transitionStarted > 1.05) {
+          player.vy += 200 * dt;
+          player.anim += dt * 14;
+          if (elapsed - transitionStarted > 1.5) {
+            transitionPhase = "splash";
+            transitionStarted = elapsed;
+            setTransition("splash");
+          }
+        } else if (transitionPhase === "splash") {
+          shake = 5;
+          if (elapsed - transitionStarted > 0.6) {
             transitionPhase = "blackout";
             transitionStarted = elapsed;
             setTransition("blackout");
           }
-        } else if (elapsed - transitionStarted > 1.35) {
+        } else if (transitionPhase === "blackout") {
+          shake = 0;
+          if (elapsed - transitionStarted > 1.4) {
+            transitionPhase = "card";
+            transitionStarted = elapsed;
+            player.x = 5420;
+            player.y = GROUND_Y - 22;
+            player.vx = 0;
+            player.vy = 0;
+            setTransition("card");
+          }
+        } else if (elapsed - transitionStarted > 1.8) {
           transitionPhase = "none";
-          player.x = 5420;
-          player.y = GROUND_Y - 22;
-          player.vx = 0;
-          player.vy = 0;
           setTransition("none");
         }
 
@@ -296,15 +338,25 @@ export function GameStage() {
         nearRef.current = near;
       }
 
+      ctx.save();
+      if (shake > 0) {
+        ctx.translate(
+          Math.round((Math.random() - 0.5) * shake * 2),
+          Math.round((Math.random() - 0.5) * shake * 2),
+        );
+      }
       drawBackground(ctx, camX);
       drawCrevice(ctx, camX);
       for (const obstacle of OBSTACLES) drawObstacle(ctx, obstacle, camX, elapsed);
       for (const s of STATIONS) drawStation(ctx, s, camX, elapsed, nearRef.current?.id === s.id);
+      drawMovingBoss(ctx, "golem", 4540, camX, elapsed);
+      drawMovingBoss(ctx, "angler", 6080, camX, elapsed);
       drawMovingBoss(ctx, "fish", 6400, camX, elapsed);
       drawMovingBoss(ctx, "kraken", 7240, camX, elapsed);
       for (const c of coins) if (!c.taken) drawCoin(ctx, c, camX, elapsed);
       drawPet(ctx, player, camX, elapsed, appearance);
       drawPlayer(ctx, player, camX, appearance);
+      ctx.restore();
 
       raf = requestAnimationFrame(frame);
     };
@@ -372,14 +424,35 @@ export function GameStage() {
         </div>
       )}
 
+      {transition === "quake" && (
+        <div className="pointer-events-none absolute inset-x-0 top-1/4 z-20 text-center">
+          <p className="blink font-display text-[0.55rem] text-accent sm:text-xs">!! THE GROUND IS CRACKING !!</p>
+        </div>
+      )}
+      {transition === "collapse" && (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-primary/20">
+          <p className="font-display text-[0.6rem] text-accent sm:text-sm">THE FLOOR GIVES WAY!</p>
+        </div>
+      )}
       {transition === "falling" && (
         <div className="pointer-events-none absolute inset-x-0 top-1/3 z-20 text-center">
-          <p className="font-display text-[0.55rem] text-accent sm:text-xs">WATCH YOUR STEP!</p>
+          <p className="font-display text-[0.55rem] text-accent sm:text-xs">FAAALLLIIING...</p>
+        </div>
+      )}
+      {transition === "splash" && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-cyan-crt/40">
+          <p className="font-display text-[0.7rem] text-screen sm:text-base">SPLASH!</p>
         </div>
       )}
       {transition === "blackout" && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-screen">
           <p className="blink font-display text-[0.55rem] text-cyan-crt">SIGNAL LOST...</p>
+        </div>
+      )}
+      {transition === "card" && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-screen/70">
+          <p className="font-display text-[0.5rem] text-cyan-crt">LEVEL 2</p>
+          <p className="text-glow font-display text-xs text-accent sm:text-lg">THE DEEP ARCHIVE</p>
         </div>
       )}
 
@@ -748,7 +821,7 @@ function ChallengeDialog({
   onAnswer,
   onClose,
 }: {
-  boss: "fish" | "kraken";
+  boss: BossKind;
   step: "intro" | "active" | "success";
   progress: number;
   error: string;
@@ -756,13 +829,12 @@ function ChallengeDialog({
   onAnswer: (correct: boolean) => void;
   onClose: () => void;
 }) {
-  const fish = boss === "fish";
   const trivia = getDailyTrivia(boss);
   const current = trivia[progress];
   const life = Math.max(0, 4 - progress);
   return (
     <PixelDialog
-      title={fish ? "BIG FISH — DAILY TRIVIA" : "KRAKEN — DAILY TRIVIA"}
+      title={`${BOSS_TITLES[boss]} — DAILY TRIVIA`}
       onClose={onClose}
       footer={step === "intro" ? <button type="button" className="pixel-btn bg-primary text-primary-foreground" onClick={onStart}>START CHALLENGE</button> : undefined}
     >
@@ -834,9 +906,9 @@ const TRIVIA_SETS: TriviaQuestion[][] = [
   ],
 ];
 
-function getDailyTrivia(boss: "fish" | "kraken"): TriviaQuestion[] {
+function getDailyTrivia(boss: BossKind): TriviaQuestion[] {
   const day = Math.floor(Date.now() / 86_400_000);
-  const index = (day + (boss === "kraken" ? 1 : 0)) % TRIVIA_SETS.length;
+  const index = (day + BOSS_IDS.indexOf(boss)) % TRIVIA_SETS.length;
   return TRIVIA_SETS[index] ?? TRIVIA_SETS[0] ?? [];
 }
 

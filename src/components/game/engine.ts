@@ -82,7 +82,7 @@ export function createPlayer(): Player {
   return { x: 60, y: GROUND_Y - PH, vx: 0, vy: 0, onGround: true, facing: 1, anim: 0 };
 }
 
-export function stepPlayer(p: Player, input: Input, dt: number) {
+export function stepPlayer(p: Player, input: Input, dt: number, solids: Obstacle[] = []) {
   const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
   p.vx = dir * SPEED;
   if (dir !== 0) p.facing = dir > 0 ? 1 : -1;
@@ -91,8 +91,31 @@ export function stepPlayer(p: Player, input: Input, dt: number) {
     p.onGround = false;
   }
   p.vy += GRAVITY * dt;
+
+  // Horizontal move + resolve.
   p.x += p.vx * dt;
+  for (const o of solids) {
+    const top = GROUND_Y - o.height;
+    if (p.x + PW > o.x && p.x < o.x + o.width && p.y + PH > top + 2 && p.y < GROUND_Y) {
+      p.x = p.vx > 0 ? o.x - PW : o.x + o.width;
+      p.vx = 0;
+    }
+  }
+
+  // Vertical move + resolve (landing on top of crates).
+  const prevBottom = p.y + PH;
   p.y += p.vy * dt;
+  p.onGround = false;
+  for (const o of solids) {
+    const top = GROUND_Y - o.height;
+    if (p.x + PW > o.x && p.x < o.x + o.width) {
+      if (p.vy >= 0 && prevBottom <= top + 1 && p.y + PH >= top) {
+        p.y = top - PH;
+        p.vy = 0;
+        p.onGround = true;
+      }
+    }
+  }
 
   if (p.y + PH >= GROUND_Y) {
     p.y = GROUND_Y - PH;
@@ -102,6 +125,7 @@ export function stepPlayer(p: Player, input: Input, dt: number) {
   p.x = Math.max(8, Math.min(WORLD_W - 40, p.x));
   p.anim += Math.abs(p.vx) * dt * 0.08;
 }
+
 
 export function playerCenter(p: Player) {
   return p.x + PW / 2;
@@ -356,14 +380,18 @@ export function drawCrevice(ctx: CanvasRenderingContext2D, camX: number) {
   px(ctx, x + 70, GROUND_Y - 3, 8, 8, "#43142c");
 }
 
+export type BossKind = "fish" | "kraken" | "golem" | "angler";
+
 export function drawMovingBoss(
   ctx: CanvasRenderingContext2D,
-  boss: "fish" | "kraken",
+  boss: BossKind,
   worldX: number,
   camX: number,
   t: number,
 ) {
-  const drift = Math.sin(t * (boss === "fish" ? 1.8 : 1.15)) * (boss === "fish" ? 28 : 18);
+  const speed = boss === "fish" ? 1.8 : boss === "angler" ? 1.4 : boss === "golem" ? 0.9 : 1.15;
+  const range = boss === "fish" ? 28 : boss === "angler" ? 34 : boss === "golem" ? 22 : 18;
+  const drift = Math.sin(t * speed) * range;
   const bob = Math.sin(t * 2.4) * 7;
   const x = worldX - camX + drift;
   const y = GROUND_Y - 66 + bob;
@@ -373,6 +401,23 @@ export function drawMovingBoss(
     px(ctx, x - 15, y - 7, 16, 44, "#1fa7ae");
     px(ctx, x + 43, y + 8, 6, 6, "#ffe14d");
     px(ctx, x + 50, y + 9, 4, 3, "#08130e");
+  } else if (boss === "golem") {
+    const gy = GROUND_Y - 58 + Math.sin(t * 3) * 2;
+    px(ctx, x, gy, 46, 46, "#5a3fb0");
+    px(ctx, x + 4, gy + 4, 38, 20, "#8a6cf0");
+    px(ctx, x + 10, gy + 10, 8, 6, "#ffe14d");
+    px(ctx, x + 28, gy + 10, 8, 6, "#ffe14d");
+    px(ctx, x + 6, gy + 30, 34, 8, "#33e6ff");
+    px(ctx, x - 8, gy + 12, 8, 20, "#5a3fb0");
+    px(ctx, x + 46, gy + 12, 8, 20, "#5a3fb0");
+  } else if (boss === "angler") {
+    px(ctx, x, y, 50, 34, "#2b2f6e");
+    px(ctx, x - 12, y + 4, 12, 26, "#1c2050");
+    px(ctx, x + 12, y - 16, 3, 16, "#8ad8ff");
+    const glow = Math.sin(t * 5) > 0 ? "#ffe14d" : "#fff3ac";
+    px(ctx, x + 8, y - 22, 10, 8, glow);
+    px(ctx, x + 34, y + 8, 6, 6, "#ff5f88");
+    for (let i = 0; i < 6; i++) px(ctx, x + 6 + i * 8, y + 28, 4, 6, "#f5e9ff");
   } else {
     px(ctx, x, y - 8, 58, 38, "#d83c88");
     px(ctx, x + 12, y + 2, 5, 5, "#ffe14d");
