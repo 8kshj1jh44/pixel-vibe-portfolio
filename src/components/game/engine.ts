@@ -5,6 +5,14 @@ export const VIEW_H = 270;
 export const GROUND_Y = 214;
 export const WORLD_W = 7900;
 
+/** Dive gate: stepping past this x-coordinate drops the player underwater. */
+export const DIVE_GATE_X = 5140;
+/** Left boundary of the underwater world; the player cannot walk back to land. */
+export const UNDERWATER_MIN_X = 5440;
+/** Entry spawn point when the splash sequence completes. */
+export const UNDERWATER_SPAWN_X = UNDERWATER_MIN_X;
+export const UNDERWATER_SPAWN_Y = GROUND_Y - 22;
+
 export type StationKind = "sign" | "cabinet" | "terminal" | "flag" | "portal" | "boss";
 
 export type CharacterPalette = "coral" | "aqua" | "lime";
@@ -72,6 +80,9 @@ export type Player = {
 
 export type Input = { left: boolean; right: boolean; jump: boolean };
 
+/** Optional horizontal world boundaries applied by the physics tick. */
+export type Bounds = { minX?: number; maxX?: number };
+
 const PW = 14;
 const PH = 22;
 const GRAVITY = 900;
@@ -82,7 +93,13 @@ export function createPlayer(): Player {
   return { x: 60, y: GROUND_Y - PH, vx: 0, vy: 0, onGround: true, facing: 1, anim: 0 };
 }
 
-export function stepPlayer(p: Player, input: Input, dt: number, solids: Obstacle[] = []) {
+export function stepPlayer(
+  p: Player,
+  input: Input,
+  dt: number,
+  solids: Obstacle[] = [],
+  bounds: Bounds = {},
+) {
   const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
   p.vx = dir * SPEED;
   if (dir !== 0) p.facing = dir > 0 ? 1 : -1;
@@ -122,7 +139,9 @@ export function stepPlayer(p: Player, input: Input, dt: number, solids: Obstacle
     p.vy = 0;
     p.onGround = true;
   }
-  p.x = Math.max(8, Math.min(WORLD_W - 40, p.x));
+  const minX = bounds.minX ?? 8;
+  const maxX = bounds.maxX ?? WORLD_W - 40;
+  p.x = Math.max(minX, Math.min(maxX, p.x));
   p.anim += Math.abs(p.vx) * dt * 0.08;
 }
 
@@ -224,8 +243,12 @@ function drawGround(ctx: CanvasRenderingContext2D, camX: number) {
   }
 }
 
-export function drawBackground(ctx: CanvasRenderingContext2D, camX: number) {
-  if (camX >= 5200) {
+export function drawBackground(
+  ctx: CanvasRenderingContext2D,
+  camX: number,
+  forceUnderwater = false,
+) {
+  if (camX >= 5200 || forceUnderwater) {
     drawUnderwater(ctx, camX);
     return;
   }

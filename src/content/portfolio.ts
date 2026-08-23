@@ -1,5 +1,3 @@
-import placeholder1 from "@/assets/project-placeholder-1.jpg";
-import placeholder2 from "@/assets/project-placeholder-2.jpg";
 import placeholder3 from "@/assets/project-placeholder-3.jpg";
 
 export const profile = {
@@ -49,6 +47,9 @@ export const technicalTools = [
   "Microsoft Office",
   "Basic Networking Tools",
   "SIEM",
+  "WordPress",
+  "OpenCode",
+  "n8n",
 ];
 
 export type Job = {
@@ -114,22 +115,22 @@ export type Project = {
  */
 export const projects: Project[] = [
   {
-    label: "SITE 01",
-    name: "Client Website #1",
+    label: "ID SNAKES PH",
+    name: "Identify Snakes in PH",
     blurb:
-      "Placeholder slot. A delivered business site — responsive layout, contact form, and fast load times.",
-    tags: ["React", "Tailwind", "Responsive"],
-    image: placeholder1,
-    placeholder: true,
+      "An AI-assisted guide for identifying Philippine snake species, with venom status, habitat information, and safety guidelines.",
+    tags: ["Web App", "AI / Computer Vision", "TypeScript", "Tailwind CSS"],
+    image: "/assets/projects/snake-guide-ph.png",
+    url: "https://identifysnakesinph.freedev.app/?i=1",
   },
   {
     label: "SITE 02",
-    name: "Client Website #2",
+    name: "OroqCoco Store",
     blurb:
-      "Placeholder slot. An online storefront build with product listings and a clean checkout flow.",
+      "An online storefront for OroqCoco — virgin coconut oil, coco vinegars, aminos, magnesium wellness and charcoal briquettes, with a Payload CMS catalog and a clean checkout flow.",
     tags: ["Storefront", "CMS", "SEO"],
-    image: placeholder2,
-    placeholder: true,
+    image: "/assets/projects/logo.png",
+    url: "https://oroq-coco-shop.vercel.app/",
   },
   {
     label: "SITE 03",
