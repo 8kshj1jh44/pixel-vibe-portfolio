@@ -31,9 +31,13 @@ export function GameStage() {
   const pausedRef = useRef(false);
   const dialogRef = useRef<Dialog>(null);
   const nearRef = useRef<Station | null>(null);
+  const completedBossesRef = useRef<BossKind[]>([]);
+  const challengeRef = useRef(false);
 
   pausedRef.current = screen !== "playing" || dialog !== null;
   dialogRef.current = dialog;
+  completedBossesRef.current = completedBosses;
+  challengeRef.current = dialog?.type === "challenge" && dialog.step !== "success";
 
   const openStation = useCallback(
     (s: Station) => {
@@ -79,6 +83,8 @@ export function GameStage() {
     controlsRef,
     pausedRef,
     nearRef,
+    completedRef: completedBossesRef,
+    challengeRef,
     screen,
     appearance,
     onZoneChange: setZone,

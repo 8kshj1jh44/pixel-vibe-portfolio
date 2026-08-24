@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import Shuffle from "./Shuffle/Shuffle";
 
 export function TitleScreen({
   onStart,
@@ -14,7 +15,19 @@ export function TitleScreen({
   return (
     <div className="fixed inset-0 z-30 flex flex-col items-center justify-center overflow-y-auto bg-screen/95 px-4 py-6 text-center sm:absolute sm:bg-screen/70 sm:py-0">
       <p className="font-display text-[0.5rem] text-cyan-crt sm:text-xs">LET&apos;S PLAY</p>
-      <h1 className="text-glow mt-3 font-display text-xl text-accent sm:text-4xl">FRANZ LYSTER</h1>
+      <Shuffle
+        tag="h1"
+        text="FRANZ LYSTER"
+        className="text-glow mt-3 font-display text-xl text-accent sm:text-4xl"
+        shuffleDirection="right"
+        duration={0.35}
+        ease="power3.out"
+        shuffleTimes={2}
+        stagger={0.03}
+        triggerOnce={true}
+        triggerOnHover={true}
+        respectReducedMotion={true}
+      />
       <p className="mt-3 max-w-md text-lg text-foreground sm:text-xl">
         IT Support · Embedded Systems · Vibe-Coding Web Developer
       </p>

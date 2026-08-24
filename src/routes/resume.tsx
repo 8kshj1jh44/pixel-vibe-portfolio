@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import {
   profile,
   skills,
@@ -9,6 +10,7 @@ import {
   technicalTools,
 } from "@/content/portfolio";
 import { ContactTerminal } from "@/components/game/ContactTerminal";
+import Shuffle from "@/components/game/Shuffle/Shuffle";
 
 const title = "Resume — Franz Lyster L. Tagalogon | IT Support & Web Developer";
 const description =
@@ -38,17 +40,40 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 }
 
 function ResumePage() {
+  const [seconds, setSeconds] = useState(9);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setSeconds((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link to="/" className="pixel-btn bg-secondary text-foreground">
           ◀ BACK TO GAME
         </Link>
-        <span className="font-display text-[0.5rem] text-muted-foreground">CONTINUE? 9</span>
+        <span className="font-display text-[0.5rem] text-muted-foreground">
+          CONTINUE? {seconds}
+        </span>
       </div>
 
       <header className="pixel-box mt-8 bg-card p-5">
-        <h1 className="text-glow font-display text-base text-accent sm:text-2xl">{profile.name}</h1>
+        <Shuffle
+          tag="h1"
+          text={profile.name}
+          className="text-glow font-display text-base text-accent sm:text-2xl"
+          shuffleDirection="right"
+          duration={0.35}
+          ease="power3.out"
+          shuffleTimes={2}
+          stagger={0.03}
+          triggerOnce={true}
+          triggerOnHover={true}
+          respectReducedMotion={true}
+        />
         <p className="mt-3 text-cyan-crt">{profile.title}</p>
         <p className="text-cyan-crt">
           {profile.phone} · {profile.email}

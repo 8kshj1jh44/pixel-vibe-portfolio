@@ -124,7 +124,7 @@ export const projects: Project[] = [
     url: "https://identifysnakesinph.freedev.app/?i=1",
   },
   {
-    label: "SITE 02",
+    label: "OroqCoco Store",
     name: "OroqCoco Store",
     blurb:
       "An online storefront for OroqCoco — virgin coconut oil, coco vinegars, aminos, magnesium wellness and charcoal briquettes, with a Payload CMS catalog and a clean checkout flow.",

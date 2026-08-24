@@ -2,6 +2,7 @@ import { useEffect, type RefObject, type SetStateAction } from "react";
 import {
   VIEW_W,
   WORLD_W,
+  GROUND_Y,
   DIVE_GATE_X,
   UNDERWATER_MIN_X,
   UNDERWATER_SPAWN_X,
@@ -17,8 +18,10 @@ import {
   drawObstacle,
   drawCrevice,
   drawMovingBoss,
+  drawExplosion,
   zoneAt,
   type Appearance,
+  type BossKind,
   type Input,
   type Station,
 } from "@/components/game/engine";
@@ -27,15 +30,28 @@ import {
   OBSTACLES,
   SOLIDS,
   INITIAL_COINS,
+  BOSS_POSITIONS,
   type Screen,
   type TransitionPhase,
 } from "@/components/game/level";
+import {
+  setAudioTrack,
+  setMusicCut,
+  playKillSound,
+  playCoinSound,
+  playSplashSound,
+  type AudioTrack,
+} from "@/lib/audio";
+
+const BOSS_KINDS = Object.keys(BOSS_POSITIONS) as BossKind[];
 
 type GameLoopOptions = {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   controlsRef: RefObject<Input>;
   pausedRef: RefObject<boolean>;
   nearRef: RefObject<Station | null>;
+  completedRef: RefObject<BossKind[]>;
+  challengeRef: RefObject<boolean>;
   screen: Screen;
   appearance: Appearance;
   onZoneChange: (zone: string) => void;
@@ -55,6 +71,8 @@ export function useGameLoop({
   controlsRef,
   pausedRef,
   nearRef,
+  completedRef,
+  challengeRef,
   screen,
   appearance,
   onZoneChange,
@@ -82,6 +100,12 @@ export function useGameLoop({
     let shake = 0;
     let dived = false;
     let underwater = false;
+    let splashPlayed = false;
+    let emittedTrack: AudioTrack | null = null;
+    const exploded = new Set<BossKind>();
+    const explosions: Array<{ x: number; y: number; start: number }> = [];
+    const bubbles: Array<{ x: number; y: number; r: number; speed: number; wob: number }> = [];
+    let bubbleTimer = 0;
 
     const frame = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
@@ -96,6 +120,7 @@ export function useGameLoop({
             dt,
             SOLIDS,
             underwater ? { minX: UNDERWATER_MIN_X } : {},
+            underwater,
           );
           // Stepping off the edge of the dive gate drops the player immediately.
           if (!dived && player.x >= DIVE_GATE_X) {
@@ -127,6 +152,10 @@ export function useGameLoop({
           }
         } else if (transitionPhase === "splash") {
           shake = 5;
+          if (!splashPlayed) {
+            splashPlayed = true;
+            playSplashSound();
+          }
           if (elapsed - transitionStarted > 0.6) {
             // Enter the underwater world and place the player at the spawn point.
             underwater = true;
@@ -165,15 +194,62 @@ export function useGameLoop({
             c.taken = true;
             onCollect((prev) => (prev.includes(c.label) ? prev : [...prev, c.label]));
             onPickup(c.label);
+            playCoinSound();
             window.setTimeout(() => onPickup((p) => (p === c.label ? null : p)), 2200);
           }
         }
 
         let near: Station | null = null;
         for (const s of STATIONS) {
+          if (s.kind === "boss" && completedRef.current.includes(s.id as BossKind)) continue;
           if (Math.abs(s.x + 14 - cx) < 34) near = s;
         }
         nearRef.current = near;
+      }
+
+      // Cut the music while the player is falling / diving.
+      setMusicCut(transitionPhase !== "none");
+
+      // Contextual music: boss challenge takes over; else underwater, else theme.
+      const targetTrack: AudioTrack = challengeRef.current
+        ? "boss"
+        : underwater
+          ? "water"
+          : "theme";
+      if (targetTrack !== emittedTrack) {
+        emittedTrack = targetTrack;
+        setAudioTrack(targetTrack);
+      }
+
+      // Start an explosion + sound the first time a boss is defeated.
+      for (const kind of BOSS_KINDS) {
+        if (completedRef.current.includes(kind) && !exploded.has(kind)) {
+          exploded.add(kind);
+          explosions.push({ x: BOSS_POSITIONS[kind], y: GROUND_Y - 60, start: elapsed });
+          playKillSound();
+        }
+      }
+
+      // Water bubbles rising from the diver's mouth while underwater.
+      if (underwater) {
+        bubbleTimer += dt;
+        while (bubbleTimer > 0.55) {
+          bubbleTimer -= 0.55;
+          bubbles.push({
+            x: player.x + 6 + (Math.random() - 0.5) * 4,
+            y: player.y - 2,
+            r: 2 + Math.floor(Math.random() * 2),
+            speed: 28 + Math.random() * 20,
+            wob: Math.random() * Math.PI * 2,
+          });
+        }
+      }
+      for (let i = bubbles.length - 1; i >= 0; i--) {
+        const b = bubbles[i];
+        if (!b) continue;
+        b.y -= b.speed * dt;
+        b.wob += dt * 3;
+        if (b.y < 0) bubbles.splice(i, 1);
       }
 
       ctx.save();
@@ -183,23 +259,43 @@ export function useGameLoop({
           Math.round((Math.random() - 0.5) * shake * 2),
         );
       }
-      drawBackground(ctx, camX, underwater);
+      drawBackground(ctx, camX, underwater, elapsed);
       if (!underwater) drawCrevice(ctx, camX);
       for (const obstacle of OBSTACLES) drawObstacle(ctx, obstacle, camX, elapsed);
       for (const s of STATIONS) drawStation(ctx, s, camX, elapsed, nearRef.current?.id === s.id);
-      drawMovingBoss(ctx, "golem", 4540, camX, elapsed);
-      drawMovingBoss(ctx, "angler", 6080, camX, elapsed);
-      drawMovingBoss(ctx, "fish", 6400, camX, elapsed);
-      drawMovingBoss(ctx, "kraken", 7240, camX, elapsed);
+      for (const kind of BOSS_KINDS) {
+        if (!completedRef.current.includes(kind)) {
+          drawMovingBoss(ctx, kind, BOSS_POSITIONS[kind], camX, elapsed, player.x);
+        }
+      }
+      for (let i = explosions.length - 1; i >= 0; i--) {
+        const e = explosions[i];
+        if (!e) continue;
+        if (elapsed - e.start > 1) {
+          explosions.splice(i, 1);
+        } else {
+          drawExplosion(ctx, e.x - camX, e.y, elapsed - e.start);
+        }
+      }
       for (const c of coins) if (!c.taken) drawCoin(ctx, c, camX, elapsed);
+      for (const b of bubbles) {
+        const bx = b.x - camX + Math.sin(b.wob) * 2;
+        ctx.fillStyle = "#bfeef7";
+        ctx.fillRect(Math.round(bx), Math.round(b.y), b.r, b.r);
+        ctx.fillStyle = "#9fdce8";
+        ctx.fillRect(Math.round(bx + 1), Math.round(b.y + 1), b.r - 1, b.r - 1);
+      }
       drawPet(ctx, player, camX, elapsed, appearance);
-      drawPlayer(ctx, player, camX, appearance);
+      drawPlayer(ctx, player, camX, appearance, underwater);
       ctx.restore();
 
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      setAudioTrack("theme");
+    };
   }, [
     screen,
     appearance,
@@ -211,5 +307,7 @@ export function useGameLoop({
     controlsRef,
     pausedRef,
     nearRef,
+    completedRef,
+    challengeRef,
   ]);
 }

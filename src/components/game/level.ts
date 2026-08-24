@@ -24,6 +24,7 @@ export const STATIONS: Station[] = [
   { id: "education", kind: "sign", x: 5580, label: "EDUCATION" },
   { id: "certifications", kind: "sign", x: 5900, label: "CERTS" },
   { id: "golem", kind: "boss", x: 4540, label: "SIGNAL GOLEM" },
+  { id: "goblin", kind: "boss", x: 4860, label: "BIG BAD GOBLIN" },
   { id: "angler", kind: "boss", x: 6080, label: "ANGLERFISH" },
   { id: "fish", kind: "boss", x: 6400, label: "BIG FISH" },
   { id: "tools", kind: "sign", x: 6860, label: "TOOLS" },
@@ -49,13 +50,22 @@ export const OBSTACLES: Obstacle[] = [
 /** Crates and coral are solid platforms you can stand on. */
 export const SOLIDS = OBSTACLES.filter((o) => o.kind === "crate" || o.kind === "coral");
 
-export const BOSS_IDS: BossKind[] = ["fish", "kraken", "golem", "angler"];
+export const BOSS_IDS: BossKind[] = ["fish", "kraken", "golem", "angler", "goblin"];
 
 export const BOSS_TITLES: Record<BossKind, string> = {
   fish: "BIG FISH",
   kraken: "KRAKEN",
   golem: "SIGNAL GOLEM",
   angler: "ANGLERFISH",
+  goblin: "BIG BAD GOBLIN",
+};
+
+export const BOSS_POSITIONS: Record<BossKind, number> = {
+  fish: 6400,
+  kraken: 7240,
+  golem: 4540,
+  angler: 6080,
+  goblin: 4860,
 };
 
 export const INITIAL_COINS: Coin[] = skills.map((label, i) => ({
