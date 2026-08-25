@@ -19,7 +19,6 @@ export const STATIONS: Station[] = [
   { id: "fish", kind: "boss", x: 6400, label: "BIG FISH" },
   { id: "tools", kind: "sign", x: 6860, label: "TOOLS" },
   { id: "kraken", kind: "boss", x: 7240, label: "KRAKEN" },
-  { id: "contact", kind: "terminal", x: 7600, label: "CONTACT" },
   { id: "end", kind: "flag", x: 7800, label: "GOAL" },
 ];
 

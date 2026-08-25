@@ -512,7 +512,8 @@ export function drawPlayer(
   }
   // body: wet-suit with tank when underwater
   if (underwater) {
-    px(ctx, p.facing > 0 ? x + PW : x - 4, y + 8, 4, 9, "#5b6b8f");
+    // Tank sits on the back (opposite of facing), so the diver reads correctly.
+    px(ctx, p.facing > 0 ? x - 4 : x + PW, y + 8, 4, 9, "#5b6b8f");
     px(ctx, x + 1, y + 8, PW - 2, 9, "#1d2c6e");
     px(ctx, x + 1, y + 12, PW - 2, 2, "#0f1a45");
   } else {

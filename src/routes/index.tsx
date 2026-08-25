@@ -29,10 +29,10 @@ function Index() {
         </p>
         <div className="flex flex-wrap gap-3">
           <a
-            href="mailto:franzlyster@gmail.com"
+            href="mailto:franzlyster@gmail.com?subject=Let%27s%20work%20together"
             className="pixel-btn bg-primary text-primary-foreground"
           >
-            HIRE / CONTACT ME
+            CONTACT ME
           </a>
           <Link to="/resume" className="pixel-btn bg-secondary text-foreground">
             VIEW RESUME

@@ -134,7 +134,6 @@ export function GameStage() {
         <TitleScreen
           onStart={() => setScreen("customize")}
           onRules={() => setScreen("rules")}
-          onContact={() => setDialog({ type: "contact" })}
           onProjects={() => setDialog({ type: "projects" })}
         />
       )}

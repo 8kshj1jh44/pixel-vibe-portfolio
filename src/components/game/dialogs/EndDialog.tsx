@@ -1,29 +1,9 @@
 import { profile, skills } from "@/content/portfolio";
 import { PixelDialog } from "../PixelDialog";
 
-export function EndDialog({
-  collected,
-  onContact,
-  onClose,
-}: {
-  collected: string[];
-  onContact: () => void;
-  onClose: () => void;
-}) {
+export function EndDialog({ collected, onClose }: { collected: string[]; onClose: () => void }) {
   return (
-    <PixelDialog
-      title="STAGE CLEAR"
-      onClose={onClose}
-      footer={
-        <button
-          type="button"
-          className="pixel-btn bg-primary text-primary-foreground"
-          onClick={onContact}
-        >
-          HIRE / CONTACT ME
-        </button>
-      }
-    >
+    <PixelDialog title="STAGE CLEAR" onClose={onClose}>
       <h3 className="text-glow font-display text-base text-accent">THANK YOU</h3>
       <p className="mt-3">
         You reached the flag with {collected.length} of {skills.length} skills collected. Thanks for

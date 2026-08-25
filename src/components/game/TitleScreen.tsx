@@ -4,12 +4,10 @@ import Shuffle from "./Shuffle/Shuffle";
 export function TitleScreen({
   onStart,
   onRules,
-  onContact,
   onProjects,
 }: {
   onStart: () => void;
   onRules: () => void;
-  onContact: () => void;
   onProjects: () => void;
 }) {
   return (
@@ -41,10 +39,7 @@ export function TitleScreen({
         <Link to="/resume" className="pixel-btn bg-accent text-accent-foreground">
           SKIP GAME
         </Link>
-        <button className="pixel-btn bg-primary text-primary-foreground" onClick={onContact}>
-          HIRE ME
-        </button>
-        <button className="pixel-btn bg-secondary text-foreground" onClick={onProjects}>
+        <button className="pixel-btn bg-primary text-primary-foreground" onClick={onProjects}>
           VIEW PROJECTS
         </button>
       </div>

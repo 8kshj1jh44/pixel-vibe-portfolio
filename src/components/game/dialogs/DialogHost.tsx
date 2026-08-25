@@ -75,13 +75,7 @@ export function DialogHost({
     case "contact":
       return <ContactDialog onClose={onClose} />;
     case "end":
-      return (
-        <EndDialog
-          collected={collected}
-          onContact={() => onNavigate({ type: "contact" })}
-          onClose={onClose}
-        />
-      );
+      return <EndDialog collected={collected} onClose={onClose} />;
     default:
       return null;
   }
