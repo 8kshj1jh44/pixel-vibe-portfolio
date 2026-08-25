@@ -33,7 +33,6 @@ Pixel-art aesthetic matching your reference: purple/magenta dusk skies, layered 
 6. **Contact / final boss room** — a working contact form styled as a retro terminal (name, email, message), plus your phone and email displayed as static info.
 7. **Game over / Thank you** — end-of-level celebration screen with "THANK YOU" arcade type and a replay button.
 
-
 ## Non-game access
 
 A pause menu (ESC) and a "SKIP GAME — VIEW RESUME" link open a scrollable pixel-styled page with all sections as plain readable content, so recruiters on mobile or without a keyboard get everything. Mobile also gets on-screen D-pad + jump buttons.

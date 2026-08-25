@@ -34,9 +34,7 @@ export function ContactTerminal() {
 
   return (
     <div className="space-y-4">
-      <p className="text-lime-crt">
-        &gt; CONNECTION ESTABLISHED. TYPE YOUR MESSAGE, PLAYER.
-      </p>
+      <p className="text-lime-crt">&gt; CONNECTION ESTABLISHED. TYPE YOUR MESSAGE, PLAYER.</p>
 
       <div className="border-4 border-border bg-screen p-3 font-body text-lime-crt">
         <p>PHONE ... {profile.phone}</p>

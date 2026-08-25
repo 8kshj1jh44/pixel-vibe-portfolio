@@ -1,5 +1,5 @@
 import { GROUND_Y, type BossKind, type Coin, type Obstacle, type Station } from "./engine";
-import { jobs, projects, skills } from "@/content/portfolio";
+import { skills } from "@/content/portfolio";
 
 /** Surface-to-underwater dive cutscene phases driven by the game loop. */
 export type TransitionPhase = "none" | "collapse" | "falling" | "splash" | "blackout" | "card";
@@ -9,18 +9,8 @@ export type Screen = "title" | "rules" | "customize" | "playing";
 export const STATIONS: Station[] = [
   { id: "about", kind: "sign", x: 240, label: "ABOUT ME" },
   { id: "skills", kind: "sign", x: 960, label: "SKILLS" },
-  ...jobs.map((_, i) => ({
-    id: `job-${i}`,
-    kind: "sign" as const,
-    x: 2420 + i * 300,
-    label: `JOB 0${i + 1}`,
-  })),
-  ...projects.map((p, i) => ({
-    id: `project-${i}`,
-    kind: "cabinet" as const,
-    x: 3840 + i * 300,
-    label: p.label,
-  })),
+  { id: "jobs", kind: "sign", x: 2420, label: "JOBS" },
+  { id: "websites", kind: "cabinet", x: 3840, label: "WEBSITES" },
   { id: "education", kind: "sign", x: 5580, label: "EDUCATION" },
   { id: "certifications", kind: "sign", x: 5900, label: "CERTS" },
   { id: "golem", kind: "boss", x: 4540, label: "SIGNAL GOLEM" },

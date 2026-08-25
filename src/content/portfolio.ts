@@ -1,4 +1,5 @@
-import placeholder3 from "@/assets/project-placeholder-3.jpg";
+import logo from "@/assets/logo.png";
+import oroqlogo from "@/assets/oroqlogo.jpg";
 
 export const profile = {
   name: "Franz Lyster L. Tagalogon",
@@ -133,12 +134,21 @@ export const projects: Project[] = [
     url: "https://oroq-coco-shop.vercel.app/",
   },
   {
-    label: "SITE 03",
-    name: "Client Website #3",
+    label: "DISCOVER OROQ",
+    name: "Discover Oroq",
     blurb:
-      "Placeholder slot. A dashboard style web app with live data panels and role-based access.",
-    tags: ["Dashboard", "Database", "Auth"],
-    image: placeholder3,
-    placeholder: true,
+      "A tourism showcase for Oroquieta City — spotlighting local attractions, destinations, and things to do, built for discoverability and search.",
+    tags: ["SEO", "Tourism", "Web App"],
+    image: oroqlogo,
+    url: "https://discover-oroq.vercel.app/",
+  },
+  {
+    label: "TAKERS DAILY",
+    name: "Takers Daily",
+    blurb:
+      "An online ordering site for Takers Daily — a matcha and cold brew shop with a full menu, pickup ordering, and payment flow.",
+    tags: ["SEO", "Cafe", "Web App"],
+    image: logo,
+    url: "https://takers-daily.vercel.app/",
   },
 ];

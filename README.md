@@ -1,10 +1,10 @@
 # Pixel Vibe Portfolio
 
-I want to create a website portfolio using: react, tailwind and next js. 
+I want to create a website portfolio using: react, tailwind and next js.
 
-I want it to showcase my skills as a vibe coder website developer. I want it to have a pixel art-like style, retro game, 90's game similar to the attached images. 
+I want it to showcase my skills as a vibe coder website developer. I want it to have a pixel art-like style, retro game, 90's game similar to the attached images.
 
-I want to play a minigame on the website, but it is my portfolio. 
+I want to play a minigame on the website, but it is my portfolio.
 
 About me section:
 Franz Lyster L. Tagalogon
@@ -13,7 +13,7 @@ IT Support | Embedded Systems & Safety-Oriented Technical Professional| 0938-835
 
 Detail-oriented IT Technician with a background in Computer Engineering and hands-on experience in technical support, system maintenance, and troubleshooting. Skilled in hardware/software support, basic networking, and system configuration. Highly adaptable, reliable, and committed to continuous learning and delivering efficient technical solutions
 
-Skills Section: 
+Skills Section:
 · Hardware & Software Troubleshooting
 
 · IT Support / Helpdesk

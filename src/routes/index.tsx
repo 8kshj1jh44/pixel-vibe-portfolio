@@ -28,7 +28,10 @@ function Index() {
           Arrows / A-D to move · Space to jump · E to interact
         </p>
         <div className="flex flex-wrap gap-3">
-          <a href="mailto:franzlyster@gmail.com" className="pixel-btn bg-primary text-primary-foreground">
+          <a
+            href="mailto:franzlyster@gmail.com"
+            className="pixel-btn bg-primary text-primary-foreground"
+          >
             HIRE / CONTACT ME
           </a>
           <Link to="/resume" className="pixel-btn bg-secondary text-foreground">

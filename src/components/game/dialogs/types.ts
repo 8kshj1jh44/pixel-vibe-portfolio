@@ -4,6 +4,7 @@ export type Dialog =
   | { type: "about" }
   | { type: "skills" }
   | { type: "job"; index: number }
+  | { type: "jobs" }
   | { type: "project"; index: number }
   | { type: "projects" }
   | { type: "education" }

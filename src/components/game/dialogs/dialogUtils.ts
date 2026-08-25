@@ -11,13 +11,12 @@ export function openStationDialog(station: Station, completedBosses: BossKind[])
   if (station.id === "education") return { type: "education" };
   if (station.id === "certifications") return { type: "certifications" };
   if (station.id === "tools") return { type: "tools" };
+  if (station.id === "jobs") return { type: "jobs" };
+  if (station.id === "websites") return { type: "projects" };
   if (BOSS_IDS.includes(station.id as BossKind)) {
     const boss = station.id as BossKind;
     if (completedBosses.includes(boss)) return { type: "challenge", boss, step: "success" };
     return { type: "challenge", boss, step: "intro" };
   }
-  if (station.id.startsWith("job-")) return { type: "job", index: Number(station.id.slice(4)) };
-  if (station.id.startsWith("project-"))
-    return { type: "project", index: Number(station.id.slice(8)) };
   return null;
 }

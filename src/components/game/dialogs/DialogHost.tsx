@@ -6,6 +6,7 @@ import { ContactDialog } from "./ContactDialog";
 import { EducationDialog } from "./EducationDialog";
 import { EndDialog } from "./EndDialog";
 import { JobDialog } from "./JobDialog";
+import { JobsDialog } from "./JobsDialog";
 import { ProjectDialog } from "./ProjectDialog";
 import { ProjectsDialog } from "./ProjectsDialog";
 import { SkillsDialog } from "./SkillsDialog";
@@ -40,6 +41,10 @@ export function DialogHost({
       return <SkillsDialog collected={collected} onClose={onClose} />;
     case "job":
       return <JobDialog index={dialog.index} onClose={onClose} />;
+    case "jobs":
+      return (
+        <JobsDialog onPickJob={(index) => onNavigate({ type: "job", index })} onClose={onClose} />
+      );
     case "project":
       return <ProjectDialog index={dialog.index} onClose={onClose} />;
     case "projects":
